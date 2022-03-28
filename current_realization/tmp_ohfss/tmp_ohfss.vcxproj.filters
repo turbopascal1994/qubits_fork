@@ -24,12 +24,21 @@
     <ClCompile Include="main.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="GeneticAlgorithm.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="compareDouble.h">
       <Filter>Исходные файлы</Filter>
     </ClInclude>
     <ClInclude Include="linalg.h">
+      <Filter>Исходные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneticAlgorithm.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="kernel.h">
       <Filter>Исходные файлы</Filter>
     </ClInclude>
   </ItemGroup>
