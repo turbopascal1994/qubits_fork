@@ -51,18 +51,6 @@ int main() {
 	double A2 = Amps[Amps.size() / 2 - 1];
 	// double A2 = Amps[Amps.size() - 1];
 
-	for (auto amp : Amps) {
-		vector<int> SignalString = kernel.CreateStartSCALLOP(w01, wt, w, CellsNumber, amp);
-		double NewTheta = kernel.NewThetaOptimizer(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, Theta);
-		cout << "A = " << amp << '\n';
-		cout << "Theta = " << NewTheta << '\n';
-		vector<int> A1Sequence;
-		double A1F, A1Angle;
-		kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, A1Sequence, A1F, A1Angle);
-		cout << '\n';
-	}
-	return 0;
-
 	cout << "Берём наименьшую амплитуду А1.\n";
 	vector<int> SignalString = kernel.CreateStartSCALLOP(w01, wt, w, CellsNumber, A1);
 	double NewTheta = kernel.NewThetaOptimizer(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, Theta);
@@ -71,10 +59,10 @@ int main() {
 	vector<int> A1Sequence;
 	double A1F, A1Angle;
 	
-	//calc(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, A1Sequence, A1F, A1Angle);
+	calc(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, A1Sequence, A1F, A1Angle);
 
 	//auto t_start = chrono::high_resolution_clock::now();
-	kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, A1Sequence, A1F, A1Angle);
+	//kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, A1Sequence, A1F, A1Angle);
 	//auto t_end = chrono::high_resolution_clock::now();
 	//auto duration = chrono::duration_cast<std::chrono::seconds>(t_end - t_start).count();
 	//cout << "Время вычисления алгоритма = " << duration << " сек.\n";
@@ -86,8 +74,8 @@ int main() {
 	cout << "A2 = " << A2 << '\n';
 	vector<int> A2Sequence;
 	double A2F, A2Angle;
-	//calc(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, A2Sequence, A2F, A2Angle);
-	kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, A2Sequence, A2F, A2Angle);
+	calc(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, A2Sequence, A2F, A2Angle);
+	//kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, A2Sequence, A2F, A2Angle);
 
 
 	// Interpolation
@@ -108,8 +96,8 @@ int main() {
 	NewTheta = kernel.NewThetaOptimizer(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta);
 	vector<int> A3Sequence;
 	double A3F, A3Angle;
-	//calc(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, A3Sequence, A3F, A3Angle);
-	kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, A3Sequence, A3F, A3Angle);
+	calc(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, A3Sequence, A3F, A3Angle);
+	//kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, A3Sequence, A3F, A3Angle);
 	cout << "Для новой амлитуды А3 = " << NewAmp << "; угол Th3 = " << A3Angle << '\n';
 	cout << "Желаемый угол Th0 = " << NeededAngle << '\n';
 
@@ -126,8 +114,8 @@ int main() {
 				CellsNumber--;
 				cout << "M = " << CellsNumber << '\n';
 				SignalString = kernel.CreateStartSCALLOP(w01, wt, w, CellsNumber, NewAmp);
-				//calc(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, NewSequence, NewF, NewAngle);
-				kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NewSequence, NewF, NewAngle);
+				calc(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, NewSequence, NewF, NewAngle);
+				//kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NewSequence, NewF, NewAngle);
 				if (Equal(NewAngle, NeededAngle) && Less(NewF, 1e-4)) {
 					break;
 				}
@@ -138,8 +126,8 @@ int main() {
 				CellsNumber++;
 				cout << "M = " << CellsNumber << '\n';
 				SignalString = kernel.CreateStartSCALLOP(w01, wt, w, CellsNumber, NewAmp);
-				//calc(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, NewSequence, NewF, NewAngle);
-				kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NewSequence, NewF, NewAngle);
+				calc(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, NewSequence, NewF, NewAngle);
+				//kernel.GenSearch(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NewSequence, NewF, NewAngle);
 				if (Equal(NewAngle, NeededAngle) && Less(NewF, 1e-4)) {
 					break;
 				}
