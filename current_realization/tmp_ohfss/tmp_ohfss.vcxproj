@@ -144,7 +144,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="compareDouble.cpp" />
-    <ClCompile Include="GeneticAlgorithm.cpp" />
     <ClCompile Include="linalg.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

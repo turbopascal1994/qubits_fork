@@ -9,6 +9,7 @@ static const double h = 1.054e-34;
 static const double C1 = 1e-12;
 static const double F0 = 2.06e-15;
 
+template<int TYPE = 3>
 class Kernel {
 	double tstep, w01, w12, wt, w, T;
 	vector<complex<double>> Id, H0, EigVec, EigVal, WF1, WF3, Hmatrix, InitStates;
@@ -58,7 +59,7 @@ public:
 				NewSequence[A] = 1;
 			}
 			else if (sina <= -AmpThreshold) {
-				NewSequence[A] = -1;
+				NewSequence[A] = (TYPE == 3 ? -1: 1);
 			}
 			else {
 				NewSequence[A] = 0;
@@ -240,6 +241,10 @@ public:
 	}
 
 	vector<int> ChangingOneElement(vector<int> InputSequence, int index, int type) {
+		if (TYPE != 3) {
+			InputSequence[index] ^= 1;
+			return InputSequence;
+		}
 		if (InputSequence[index] == -1) {
 			if (type == 0) {
 				InputSequence[index] = 1;
@@ -280,7 +285,7 @@ public:
 		double Theta = StartTheta;
 		cout << "Стартовая последовательность\n";
 		WriteSequence(InputString);
-		int SequencesNumber = 2 * InputString.size();
+		int SequencesNumber = InputString.size() * (TYPE == 3 ? 2 : 1);
 		vector<double> FArray(SequencesNumber, 0);
 		vector<double> AnglesArray(SequencesNumber, 0);
 

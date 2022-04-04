@@ -11,11 +11,13 @@
 
 using namespace std;
 
+const int TYPE = 3;
+
 void calc(double w01, double w12, double wt, double w, double T, double Len,
 		double tstep, vector<int> InputString, int NumberOfCycles, double NeededAngle, double StartTheta,
 		vector<int>& BestSequenceOverall, double& BestLeakOverall, double& BestAngleOverall) {
 	CalculationDescriptor desc = { w01, w12, wt, w, T, Len, tstep, StartTheta, NumberOfCycles, NeededAngle };
-	GeneticAlgorithm algo(InputString, 0.9, 0.3, 500, desc);
+	GeneticAlgorithm<TYPE> algo(InputString, 0.9, 0.3, 500, desc);
 	algo.run();
 	cout << "F = " << algo.getLeak() << '\n';
 	cout << "Th = " << algo.getAngle() << '\n';
@@ -27,7 +29,7 @@ void calc(double w01, double w12, double wt, double w, double T, double Len,
 int main() {
 	setlocale(LC_ALL, "Rus");
 	cout.precision(20);
-
+	
 	auto program_start = chrono::high_resolution_clock::now();
 	const double tstep = 5e-14;
 	const double w01 = PI * 8e9;
@@ -43,7 +45,7 @@ int main() {
 	const double NeededAngle = 0.024;
 	const double AngleThreshold = 0.0005;
 
-	Kernel kernel(tstep, w01, w12, wt, w, T);
+	Kernel<TYPE> kernel(tstep, w01, w12, wt, w, T);
 
 	auto Amps = kernel.CreateAmpThresholds(CellsNumber);
 
@@ -60,13 +62,8 @@ int main() {
 	double A1F, A1Angle;
 	
 	//calc(w01, w12, wt, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, A1Sequence, A1F, A1Angle);
-
-	//auto t_start = chrono::high_resolution_clock::now();
 	kernel.GenSearch(SignalString, NewTheta, A1Sequence, A1F, A1Angle);
-	//auto t_end = chrono::high_resolution_clock::now();
-	//auto duration = chrono::duration_cast<std::chrono::seconds>(t_end - t_start).count();
-	//cout << "Время вычисления алгоритма = " << duration << " сек.\n";
-	//
+	
 	Theta = 0.001;
 	cout << "Берём наибольшую амплитуду A2.\n";
 	SignalString = kernel.CreateStartSCALLOP(CellsNumber, A2);
@@ -74,9 +71,9 @@ int main() {
 	cout << "A2 = " << A2 << '\n';
 	vector<int> A2Sequence;
 	double A2F, A2Angle;
+
 	//calc(w01, w12, wt, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, A2Sequence, A2F, A2Angle);
 	kernel.GenSearch(SignalString, NewTheta, A2Sequence, A2F, A2Angle);
-
 
 	// Interpolation
 	cout << "Интерполируем амплитуду до нужной, А3.\n";
@@ -96,8 +93,10 @@ int main() {
 	NewTheta = kernel.NewThetaOptimizer(SignalString, NewTheta);
 	vector<int> A3Sequence;
 	double A3F, A3Angle;
+
 	//calc(w01, w12, wt, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, A3Sequence, A3F, A3Angle);
 	kernel.GenSearch(SignalString, NewTheta, A3Sequence, A3F, A3Angle);
+
 	cout << "Для новой амлитуды А3 = " << NewAmp << "; угол Th3 = " << A3Angle << '\n';
 	cout << "Желаемый угол Th0 = " << NeededAngle << '\n';
 
@@ -114,8 +113,10 @@ int main() {
 				CellsNumber--;
 				cout << "M = " << CellsNumber << '\n';
 				SignalString = kernel.CreateStartSCALLOP(CellsNumber, NewAmp);
+
 				//calc(w01, w12, wt, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, NewSequence, NewF, NewAngle);
 				kernel.GenSearch(SignalString, NewTheta, NewSequence, NewF, NewAngle);
+
 				if (Equal(NewAngle, NeededAngle) && Less(NewF, 1e-4)) {
 					break;
 				}
@@ -126,8 +127,10 @@ int main() {
 				CellsNumber++;
 				cout << "M = " << CellsNumber << '\n';
 				SignalString = kernel.CreateStartSCALLOP(CellsNumber, NewAmp);
+
 				//calc(w01, w12, wt, w, T, Len, tstep, SignalString, NumberOfCycles, NewTheta, NeededAngle, NewSequence, NewF, NewAngle);
 				kernel.GenSearch(SignalString, NewTheta, NewSequence, NewF, NewAngle);
+
 				if (Equal(NewAngle, NeededAngle) && Less(NewF, 1e-4)) {
 					break;
 				}
