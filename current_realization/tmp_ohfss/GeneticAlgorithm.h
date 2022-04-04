@@ -13,7 +13,7 @@ struct Individual {
 };
 
 struct CalculationDescriptor {
-	double w01, w12, w, T, Len, tstep, Theta;
+	double w01, w12, wt, w, T, Len, tstep, Theta;
 	int numberOfCycles;
 	double neededAngle;
 };

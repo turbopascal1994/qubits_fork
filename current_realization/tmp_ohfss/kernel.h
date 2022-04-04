@@ -10,12 +10,10 @@ static const double C1 = 1e-12;
 static const double F0 = 2.06e-15;
 
 class Kernel {
-	vector<complex<double>> Id, H0, EigVec, EigVal, WF1, WF3, Hmatrix, HrPlus, HrMinus, HrZero, InitStates;
+	double tstep, w01, w12, wt, w, T;
+	vector<complex<double>> Id, H0, EigVec, EigVal, WF1, WF3, Hmatrix, InitStates;
 
 	void precalcFidelityAndRotateCheck(double tstep, double w01, double w12) {
-		HrPlus.resize(9);
-		HrMinus.resize(9);
-		HrZero.resize(9);
 		EigVec.resize(9);
 		EigVal.resize(3);
 
@@ -39,11 +37,17 @@ class Kernel {
 		};
 	}
 public:
-	Kernel(double tstep = 5e-14, double w01 = PI * 8e9, double w12 = PI * (8e9 - 5e8)) {
+	Kernel(
+		double tstep,
+		double w01,
+		double w12,
+		double wt,
+		double w,
+		double T): tstep(tstep), w01(w01), w12(w12), wt(wt), w(w), T(T) {
 		precalcFidelityAndRotateCheck(tstep, w01, w12);
 	}
 
-	vector<int> CreateStartSCALLOP(double w01, double wt, double w, int M, double AmpThreshold) {
+	vector<int> CreateStartSCALLOP(int M, double AmpThreshold) {
 
 		double Tt = PI * 2 / wt;
 
@@ -64,7 +68,7 @@ public:
 		return NewSequence;
 	}
 
-	vector<double> CreateAmpThresholds(const double w01, const double wt, const double w, const int M) {
+	vector<double> CreateAmpThresholds(const int M) {
 		double Tt = 2.0 * PI / wt;
 		int PrevN = 0;
 		vector<double> AmpsArray;
@@ -90,20 +94,17 @@ public:
 		return AmpsArray;
 	}
 
-	double calcProbability(int N,
-			const int NumberOfCycles,
-			const vector<int>& InputSequence,
-			const int CyclePlusMinusSteps,
-			const int CycleZeroSteps,
-			double Amp,
-			vector<complex<double>>& UPlus,
-			vector<complex<double>>& UMinus,
-			vector<complex<double>>& UZero,
-			vector<complex<double>>& WF,
-			vector<complex<double>>& WF1) {
-		vector<complex<double>> newWF(N);
-		vector<complex<double>> res(1);
-
+	double calcProbability(
+		int N,
+		const vector<int>& InputSequence,
+		const int CyclePlusMinusSteps,
+		const int CycleZeroSteps,
+		const vector<complex<double>>& UPlus,
+		const vector<complex<double>>& UMinus,
+		const vector<complex<double>>& UZero,
+		vector<complex<double>>& WF,
+		const vector<complex<double>>& WF1
+	) {
 		auto UPlus80 = pow_matrix(UPlus, CyclePlusMinusSteps, N);
 		auto UMinus80 = pow_matrix(UMinus, CyclePlusMinusSteps, N);
 		auto UZero80 = pow_matrix(UZero, CyclePlusMinusSteps, N);
@@ -123,18 +124,17 @@ public:
 			else if (InputSequence[i] == 1) {
 				U = UPlusZero;
 			}
-
 			WF = mult(U, WF, N, 1, N, N, 1, 1);
 		}
 
-		res[0] = { 0, 0 };
+		complex<double> res = { 0, 0 };
 		for (int i = 0; i < N; i++) {
-			res[0] += WF[i] * conj(WF1[i]);
+			res += WF[i] * conj(WF1[i]);
 		}
-		return norm(res[0]);
+		return norm(res);
 	}
 
-	double Fidelity(double w01, double w12, double w, double T, double Len, double tstep, const vector<int>& SignalString, int NumberOfCycles, double Theta) {
+	double Fidelity(const vector<int>& SignalString, double Theta) {
 		int CellsNumber = SignalString.size();
 
 		double V = F0 / w;
@@ -147,6 +147,9 @@ public:
 		int CycleZeroSteps = CycleSteps - CyclePlusMinusSteps;
 
 		double sum = 0;
+		vector<complex<double>> HrPlus(H0.size());
+		vector<complex<double>> HrMinus(H0.size());
+		vector<complex<double>> HrZero(H0.size());
 		for (size_t i = 0; i < H0.size(); ++i) {
 			HrPlus[i] = { H0[i].real(), Amp * Hmatrix[i].real() };
 			HrMinus[i] = { H0[i].real(), -Amp * Hmatrix[i].real() };
@@ -159,12 +162,12 @@ public:
 
 		for (size_t IS = 0; IS < 6; ++IS) {
 			vector<complex<double>> WF = { InitStates[IS], InitStates[IS + 6], InitStates[IS + 12] };
-			sum += calcProbability(3, NumberOfCycles, SignalString, CyclePlusMinusSteps, CycleZeroSteps, Amp, UPlus, UMinus, UZero, WF, WF3);
+			sum += calcProbability(3, SignalString, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF3);
 		}
 		return sum / 6;
 	}
 
-	double RotateCheck(double w01, double w12, double w, double T, double Len, double tstep, int NumberOfCycles, const vector<int>& InputSequence, double Theta) {
+	double RotateCheck(const vector<int>& InputSequence, double Theta) {
 		double V = F0 / w;
 		double Cc = Theta / (F0 * sqrt(2.0 * w01 / (h * C1)));
 		double Amp = Cc * V * sqrt(h * w01 / (2.0 * C1));
@@ -176,6 +179,10 @@ public:
 		int CycleZeroSteps = CycleSteps - CyclePlusMinusSteps;
 
 		vector<complex<double>> WF(WF1);
+		vector<complex<double>> HrPlus(H0.size());
+		vector<complex<double>> HrMinus(H0.size());
+		vector<complex<double>> HrZero(H0.size());
+
 		for (int i = 0; i < H0.size(); i++) {
 			HrPlus[i] = { H0[i].real(), Amp * Hmatrix[i].real() };
 			HrMinus[i] = { H0[i].real(), -Amp * Hmatrix[i].real() };
@@ -186,10 +193,10 @@ public:
 		auto UMinus = getUMatrix(Id, HrMinus, tstep, h, 3);
 		auto UZero = getUMatrix(Id, HrZero, tstep, h, 3);
 
-		return calcProbability(3, NumberOfCycles, InputSequence, CyclePlusMinusSteps, CycleZeroSteps, Amp, UPlus, UMinus, UZero, WF, WF1);
+		return calcProbability(3, InputSequence, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF1);
 	}
 
-	double NewThetaOptimizer(double w01, double w12, double w, double T, double Len, double tstep, const vector<int>& InputSequence, int NumberOfCycles, double UnOptTheta) {
+	double NewThetaOptimizer(const vector<int>& InputSequence, double UnOptTheta) {
 		double SmallStep = 0.0005;
 		double BigStep = 0.005;
 
@@ -199,7 +206,7 @@ public:
 		double Theta = UnOptTheta;
 
 		// Вопрос: что означает константа 0.5?
-		P = RotateCheck(w01, w12, w, T, Len, tstep, NumberOfCycles, InputSequence, Theta);
+		P = RotateCheck(InputSequence, Theta);
 		while (abs(P - 0.5) > PCrit) {
 			double ThetaStep = 0;
 			if (abs(P - 0.5) >= StepCrit) {
@@ -219,7 +226,7 @@ public:
 				}
 			}
 			Theta += ThetaStep;
-			P = RotateCheck(w01, w12, w, T, Len, tstep, NumberOfCycles, InputSequence, Theta);
+			P = RotateCheck(InputSequence, Theta);
 		}
 
 		return Theta;
@@ -260,9 +267,12 @@ public:
 		return InputSequence;
 	}
 
-	void GenSearch(double w01, double w12, double w, double T, double Len,
-		double tstep, vector<int> InputString, int NumberOfCycles,
-		double StartTheta, vector<int>& BestSequenceOverall, double& BestLeakOverall, double& BestAngleOverall) {
+	void GenSearch(
+		vector<int> InputString,
+		double StartTheta, vector<int>& BestSequenceOverall,
+		double& BestLeakOverall,
+		double& BestAngleOverall
+	) {
 		int Gen = 1;
 		double NewLeak = 0;
 		double GoldLeak = 1;
@@ -279,13 +289,17 @@ public:
 				GoldLeak = NewLeak;
 				InputString = BestSequence;
 			}
-#pragma omp parallel for
-			for (int j = 0; j < SequencesNumber; ++j) {
-				auto SignalString = ChangingOneElement(InputString, j / 2, j % 2);
-				double OptimizedTheta = NewThetaOptimizer(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, Theta);
-				AnglesArray[j] = OptimizedTheta;
-				FArray[j] = Fidelity(w01, w12, w, T, Len, tstep, SignalString, NumberOfCycles, OptimizedTheta);
+			#pragma omp parallel shared(InputString, Theta, AnglesArray, FArray)
+			{
+				int j;
+				#pragma omp for private(j)
+				for (j = 0; j < SequencesNumber; ++j) {
+					auto SignalString = ChangingOneElement(InputString, j / 2, j % 2);
+					AnglesArray[j] = NewThetaOptimizer(SignalString, Theta);
+					FArray[j] = Fidelity(SignalString, AnglesArray[j]);
+				}
 			}
+			
 			double MinLeak = FArray[0];
 			int MinLeakN = 0;
 			for (size_t j = 1; j < FArray.size(); ++j) {
@@ -296,7 +310,7 @@ public:
 			}
 			BestSequence = ChangingOneElement(InputString, MinLeakN / 2, MinLeakN % 2);
 			auto BestAngle = AnglesArray[MinLeakN];
-			
+
 			/*cout << "Поколение #" << Gen << '\n';
 			cout << "Минимальная утечка у последовательности ";
 			for (auto& i : BestSequence) cout << i;

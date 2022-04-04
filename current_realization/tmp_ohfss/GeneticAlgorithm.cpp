@@ -2,13 +2,16 @@
 #include <cassert>
 #include<omp.h>
 
-GeneticAlgorithm::GeneticAlgorithm(std::vector<int> _inputSequence,
-		double _crossover_probability, double _mutation_probability, int _maxIter,
-		CalculationDescriptor _config):
-			inputSequence(_inputSequence), crossover_probability(_crossover_probability),
-			mutation_probability(_mutation_probability), maxIter(_maxIter),
-			config(_config){
-	kernel = Kernel(config.tstep, config.w01, config.w12);
+GeneticAlgorithm::GeneticAlgorithm(
+	std::vector<int> _inputSequence,
+	double _crossover_probability,
+	double _mutation_probability,
+	int _maxIter,
+	CalculationDescriptor _config
+):
+		inputSequence(_inputSequence), crossover_probability(_crossover_probability),
+		mutation_probability(_mutation_probability), maxIter(_maxIter), config(_config),
+		kernel(config.tstep, config.w01, config.w12, config.wt, config.w, config.T){
 	gen = mt19937(chrono::high_resolution_clock::now().time_since_epoch().count());
 	population_size = 2 * inputSequence.size();
 	reset();
@@ -112,16 +115,12 @@ void GeneticAlgorithm::run(){
 
 double GeneticAlgorithm::_optimizedTheta(vector<int>& sequence)
 {
-	return kernel.NewThetaOptimizer(config.w01, config.w12,
-		config.w, config.T, config.Len, config.tstep,
-		sequence, config.numberOfCycles, config.Theta);
+	return kernel.NewThetaOptimizer(sequence, config.Theta);
 }
 
 double GeneticAlgorithm::_fidelity(vector<int>& sequence, double theta)
 {
-	return kernel.Fidelity(config.w01, config.w12, config.w,
-		config.T, config.Len, config.tstep, sequence,
-		config.numberOfCycles, theta);
+	return kernel.Fidelity(sequence, theta);
 }
 
 void GeneticAlgorithm::reset() {
