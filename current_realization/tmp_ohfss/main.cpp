@@ -53,6 +53,8 @@ int main() {
 	CalculationDescriptor desc(w01, w12, wt, w, T, Len, tstep, NewTheta, NeededAngle, NumberOfCycles);
 
 	GeneticAlgorithm<TYPE> algo(SignalString, crossover_probability, mutation_probability, maxIter, desc);
+	// vector<vector<int>> start_population = {...};
+	// GeneticAlgorithm<TYPE> algo(start_population, crossover_probability, mutation_probability, maxIter, desc);
 	algo.run();
 	A1Sequence = algo.getSequence();
 	A1F = algo.getLeak();
