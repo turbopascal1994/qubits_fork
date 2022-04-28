@@ -87,12 +87,15 @@ GeneticAlgorithm<TYPE>::GeneticAlgorithm(
 	int _maxIter,
 	CalculationDescriptor _config
 ) :
-	population(_inputPopulation), crossover_probability(_crossover_probability),
+	crossover_probability(_crossover_probability),
 	mutation_probability(_mutation_probability), maxIter(_maxIter), config(_config),
 	kernel(config.tstep, config.w01, config.w12, config.wt, config.w, config.T),
 	gen(mt19937(chrono::high_resolution_clock::now().time_since_epoch().count())) {
 	reset();
 	population_size = population.size();
+	for (int i = 0; i < _inputPopulation.size(); i++) {
+		population.push_back(createIndividual(_inputPopulation[i]));
+	}
 }
 
 template<int TYPE>
