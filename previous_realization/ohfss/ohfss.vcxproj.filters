@@ -32,5 +32,8 @@
     <ClInclude Include="compareDouble.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="kernel.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

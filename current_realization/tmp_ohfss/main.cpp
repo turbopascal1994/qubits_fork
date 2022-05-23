@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <omp.h>
 #include <map>
-#include "compareDouble.h"
 #include "GeneticAlgorithm.h"
 
 using namespace std;

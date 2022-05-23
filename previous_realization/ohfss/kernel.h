@@ -26,7 +26,7 @@ class Kernel {
 		vector<int> indices = { 0, 1, 2 };
 		sort(indices.begin(), indices.end(), [&](int a, int b) {
 			return EigVal[a].real() < EigVal[b].real();
-		});
+			});
 		WF1 = { EigVec[indices[0]], EigVec[indices[0] + 3], EigVec[indices[0] + 6] };
 		WF3 = { EigVec[indices[2]], EigVec[indices[2] + 3], EigVec[indices[2] + 6] };
 
@@ -113,7 +113,7 @@ public:
 		double w12,
 		double wt,
 		double w,
-		double T): tstep(tstep), w01(w01), w12(w12), wt(wt), w(w), T(T) {
+		double T) : tstep(tstep), w01(w01), w12(w12), wt(wt), w(w), T(T) {
 		precalcFidelityAndRotateCheck(tstep, w01, w12);
 	}
 
@@ -127,7 +127,7 @@ public:
 				NewSequence[A] = 1;
 			}
 			else if (sina <= -AmpThreshold) {
-				NewSequence[A] = (TYPE == 3 ? -1: 1);
+				NewSequence[A] = (TYPE == 3 ? -1 : 1);
 			}
 			else {
 				NewSequence[A] = 0;
@@ -293,17 +293,17 @@ public:
 				GoldLeak = NewLeak;
 				InputString = BestSequence;
 			}
-			#pragma omp parallel shared(InputString, Theta, AnglesArray, FArray)
+#pragma omp parallel shared(InputString, Theta, AnglesArray, FArray)
 			{
 				int j;
-				#pragma omp for private(j)
+#pragma omp for private(j)
 				for (j = 0; j < SequencesNumber; ++j) {
 					auto SignalString = ChangingOneElement(InputString, j / 2, j % 2);
 					AnglesArray[j] = NewThetaOptimizer(SignalString, Theta);
 					FArray[j] = Fidelity(SignalString, AnglesArray[j]);
 				}
 			}
-			
+
 			double MinLeak = FArray[0];
 			int MinLeakN = 0;
 			for (size_t j = 1; j < FArray.size(); ++j) {
