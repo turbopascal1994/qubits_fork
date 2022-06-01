@@ -11,6 +11,9 @@ struct Individual {
 	vector<int> sequence;
 	double optimizedTheta;
 	double F;
+	int numberOfCycles;
+	Individual(vector<int> _sequence = {0}, double _theta = 0, double _f = 0, int _cycles = 0) :
+		sequence(_sequence), optimizedTheta(_theta), F(_f), numberOfCycles(_cycles) {}
 };
 
 struct CalculationDescriptor {
@@ -20,7 +23,7 @@ struct CalculationDescriptor {
 	CalculationDescriptor(
 		double w01, double w12, double wt, double w,
 		double T, double Len, double tstep, double Theta,
-		double neededAngle, double numberOfCycles) :
+		double neededAngle, int numberOfCycles) :
 		w01(w01), w12(w12), wt(wt), w(w),
 		T(T), Len(Len), tstep(tstep), Theta(Theta),
 		neededAngle(neededAngle), numberOfCycles(numberOfCycles) {}
@@ -38,17 +41,18 @@ class GeneticAlgorithm
 	mt19937 gen;
 	Kernel<TYPE> kernel;
 	double bestLeak, bestAngle;
+	int bestNumberOfCycles;
 	vector<int> bestSequence;
 
 	void createPopulation(vector<int> sequence);
 	Individual createIndividual(vector<int> sequence);
 	double _optimizedTheta(vector<int>& Sequence);
 	double _fidelity(vector<int>& sequence, double theta);
-	vector<Individual> tournament();
+	vector<vector<int>> tournament();
 	double generateProbability();
 	int generateInt(int l, int r);
-	void crossover(Individual& a, Individual& b);
-	void mutation(Individual& a, double p);
+	void crossover(vector<int>& a, vector<int>& b);
+	void mutation(vector<int>& a, double p);
 	int compare(Individual& a, Individual& b);
 	void sort(vector<Individual>& a);
 public:
@@ -61,6 +65,7 @@ public:
 	double getLeak();
 	double getAngle();
 	vector<int> getSequence();
+	int getNumberOfCycles();
 };
 
 template<int TYPE>
@@ -92,7 +97,7 @@ GeneticAlgorithm<TYPE>::GeneticAlgorithm(
 	kernel(config.tstep, config.w01, config.w12, config.wt, config.w, config.T),
 	gen(mt19937(chrono::high_resolution_clock::now().time_since_epoch().count())) {
 	reset();
-	population_size = population.size();
+	population_size = _inputPopulation.size();
 	for (int i = 0; i < _inputPopulation.size(); i++) {
 		population.push_back(createIndividual(_inputPopulation[i]));
 	}
@@ -110,9 +115,25 @@ void GeneticAlgorithm<TYPE>::createPopulation(vector<int> sequence) {
 
 template<int TYPE>
 Individual GeneticAlgorithm<TYPE>::createIndividual(vector<int> sequence) {
-	double optimizedTheta = _optimizedTheta(sequence);
-	double F = _fidelity(sequence, optimizedTheta);
-	return Individual({ sequence, optimizedTheta, F });
+	vector<int> cur_seq;
+	cur_seq.reserve(sequence.size() * config.numberOfCycles);
+
+	pair<double, double> Q = {INT_MAX, INT_MAX};
+	int numberOfCycles = -1;
+	double theta = INT_MAX;
+
+	for (int len = 1; len <= config.numberOfCycles; len++) {
+		for (size_t j = 0; j < sequence.size(); j++) cur_seq.push_back(sequence[j]);
+		double optimizedTheta = _optimizedTheta(cur_seq);
+		double F = _fidelity(cur_seq, optimizedTheta);
+		pair<double, double> cur_Q = { fabs(optimizedTheta - config.neededAngle), F };
+		if (cur_Q < Q) {
+			Q = cur_Q;
+			theta = optimizedTheta;
+			numberOfCycles = len;
+		}
+	}
+	return Individual(sequence, theta, Q.second, numberOfCycles);
 }
 
 template<int TYPE>
@@ -130,36 +151,29 @@ int GeneticAlgorithm<TYPE>::compare(Individual& a, Individual& b) {
 template<int TYPE>
 void GeneticAlgorithm<TYPE>::sort(vector<Individual> & a) {
 	std::sort(a.begin(), a.end(), [&](Individual& l, Individual& r) {
-		double left_abs = fabs(l.optimizedTheta - config.neededAngle);
-		double right_abs = fabs(r.optimizedTheta - config.neededAngle);
-		if (fabs(left_abs - right_abs) < 1e-9) {
-			return l.F < r.F;
-		}
-		return left_abs < right_abs;
+		return compare(l, r) == -1;
 	});
 }
 
 template<int TYPE>
-vector<Individual> GeneticAlgorithm<TYPE>::tournament() {
+vector<vector<int>> GeneticAlgorithm<TYPE>::tournament() {
 	int index1, index2, index3;
 	do {
 		index1 = generateInt(0, population_size - 1);
 		index2 = generateInt(0, population_size - 1);
 		index3 = generateInt(0, population_size - 1);
 	} while (index1 == index2 || index1 == index3 || index2 == index3);
-	vector<Individual> ans;
-	if (compare(population[index1], population[index2]) == -1) ans.push_back(population[index1]);
-	else ans.push_back(population[index2]);
+	vector<vector<int>> ans;
+	if (compare(population[index1], population[index2]) == -1) ans.push_back(population[index1].sequence);
+	else ans.push_back(population[index2].sequence);
 
-	if (compare(population[index2], population[index3]) == -1) ans.push_back(population[index2]);
-	else ans.push_back(population[index3]);
-	
+	if (compare(population[index2], population[index3]) == -1) ans.push_back(population[index2].sequence);
+	else ans.push_back(population[index3].sequence);
 	return ans;
 }
 
 template<int TYPE>
-double GeneticAlgorithm<TYPE>::generateProbability()
-{
+double GeneticAlgorithm<TYPE>::generateProbability(){
 	double g = gen();
 	g = fabs(g);
 	return g / numeric_limits<int>::max();
@@ -173,40 +187,38 @@ int GeneticAlgorithm<TYPE>::generateInt(int l, int r) {
 }
 
 template<int TYPE>
-void GeneticAlgorithm<TYPE>::crossover(Individual& a, Individual& b) {
-	int index = generateInt(2, (int)b.sequence.size() - 3);
-#pragma omp parallel for
-	for (int i = index; i < a.sequence.size(); i++) {
-		swap(a.sequence[i], b.sequence[i]);
+void GeneticAlgorithm<TYPE>::crossover(vector<int>& a, vector<int>& b) {
+	int index = generateInt(2, (int)b.size() - 3);
+	for (int i = index; i < a.size(); i++) {
+		swap(a[i], b[i]);
 	}
-	a = createIndividual(a.sequence);
-	b = createIndividual(b.sequence);
 }
 
 template<int TYPE>
-void GeneticAlgorithm<TYPE>::mutation(Individual& a, double p) {
-	bool changed = false;
-	for (int i = 0; i < a.sequence.size(); i++) {
+void GeneticAlgorithm<TYPE>::mutation(vector<int>& a, double p) {
+	for (int i = 0; i < a.size(); i++) {
 		if (generateProbability() < p) {
-			changed = true;
-			vector<int> tmp = { -1, 0, 1 };
+			vector<int> tmp;
 			if (TYPE == 2) tmp = { 0, 1 };
-			tmp.erase(find(tmp.begin(), tmp.end(), a.sequence[i]));
-			a.sequence[i] = tmp[generateProbability() < 1.0 / 2];
+			else tmp = { -1, 0, 1 };
+			tmp.erase(find(tmp.begin(), tmp.end(), a[i]));
+			if (tmp.size() == 1) a[i] = tmp[0];
+			else a[i] = tmp[generateProbability() < 1.0 / 2];
 		}
 	}
-	if (changed) a = createIndividual(a.sequence);
 }
 
 template<int TYPE>
 void GeneticAlgorithm<TYPE>::run() {
 	double start = omp_get_wtime();
+	vector<vector<int>> offSpring;
+	offSpring.reserve(population_size);
+
 	for (int iteration = 0; iteration < maxIter; iteration++) {
-		// cout << iteration << endl;
-		vector<Individual> offSpring;
+		// cout << iteration << '\n';
+		offSpring.clear();
 		for (int i = 0; i < population_size; i += 2) {
-			// cout << '\t' << i << endl;
-			vector<Individual> parents = tournament();
+			auto parents = tournament();
 			if (generateProbability() < crossover_probability) {
 				crossover(parents[0], parents[1]);
 			}
@@ -217,16 +229,22 @@ void GeneticAlgorithm<TYPE>::run() {
 				offSpring.push_back(parents[j]);
 			}
 		}
+		vector<Individual> new_population(offSpring.size());
+#pragma omp parallel for
+		for (int i = 0; i < new_population.size(); i++) {
+			new_population[i] = createIndividual(offSpring[i]);
+		}
 		sort(population);
-		sort(offSpring);
-		offSpring[population_size - 2] = population[0];
-		offSpring[population_size - 1] = population[1];
-		population = offSpring;
+		sort(new_population);
+		new_population[population_size - 2] = population[0];
+		new_population[population_size - 1] = population[1];
+		population = move(new_population);
 	}
 	sort(population);
 	bestLeak = population[0].F;
 	bestAngle = population[0].optimizedTheta;
 	bestSequence = population[0].sequence;
+	bestNumberOfCycles = population[0].numberOfCycles;
 	cout << "Время работы генетического алгоритма = " << omp_get_wtime() - start << '\n';
 }
 
@@ -234,7 +252,6 @@ template<int TYPE>
 double GeneticAlgorithm<TYPE>::_optimizedTheta(vector<int>& sequence)
 {
 	double res = kernel.NewThetaOptimizer(sequence, config.Theta);
-	// cout << "Theta done" << endl;
 	return res;
 }
 
@@ -242,7 +259,6 @@ template<int TYPE>
 double GeneticAlgorithm<TYPE>::_fidelity(vector<int>& sequence, double theta)
 {
 	double res = kernel.Fidelity(sequence, theta);
-	// cout << "Fidelity done" << endl;
 	return res;
 }
 
@@ -269,4 +285,10 @@ template<int TYPE>
 vector<int> GeneticAlgorithm<TYPE>::getSequence()
 {
 	return bestSequence;
+}
+
+template<int TYPE>
+int GeneticAlgorithm<TYPE>::getNumberOfCycles()
+{
+	return bestNumberOfCycles;
 }

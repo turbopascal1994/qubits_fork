@@ -207,7 +207,9 @@ public:
 
 		// Вопрос: что означает константа 0.5?
 		P = RotateCheck(InputSequence, Theta);
-		while (abs(P - 0.5) > PCrit) {
+		int iter = 0;
+		while (abs(P - 0.5) > PCrit && iter < 10000) {
+			iter++;
 			double ThetaStep = 0;
 			if (abs(P - 0.5) >= StepCrit) {
 				if (P > 0.5) {
