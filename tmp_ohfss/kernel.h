@@ -9,24 +9,24 @@ static const double h = 1.054e-34;
 static const double C1 = 1e-12;
 static const double F0 = 2.06e-15;
 
-template<int TYPE = 3>
 class Kernel {
+	int TYPE;
 	double tstep, w01, w12, wt, w, T;
 	vector<complex<double>> Id, H0, EigVec, EigVal, WF1, WF3, Hmatrix, InitStates;
 
 	void precalcFidelityAndRotateCheck(double tstep, double w01, double w12) {
-		EigVec.resize(9);
-		EigVal.resize(3);
 
 		Id = { {1, 0}, {0, 0}, {0, 0}, {0, 0}, {1, 0}, {0, 0}, {0, 0}, {0, 0}, {1, 0} };
 
 		H0 = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {h * w01, 0}, {0, 0}, {0, 0}, {0, 0}, {h * (w01 + w12), 0} };
+		EigVec.resize(9);
+		EigVal.resize(3);
 		eig(H0, EigVec, EigVal, 3);
 
 		vector<int> indices = { 0, 1, 2 };
 		sort(indices.begin(), indices.end(), [&](int a, int b) {
 			return EigVal[a].real() < EigVal[b].real();
-			});
+		});
 		WF1 = { EigVec[indices[0]], EigVec[indices[0] + 3], EigVec[indices[0] + 6] };
 		WF3 = { EigVec[indices[2]], EigVec[indices[2] + 3], EigVec[indices[2] + 6] };
 
@@ -113,7 +113,8 @@ public:
 		double w12,
 		double wt,
 		double w,
-		double T) : tstep(tstep), w01(w01), w12(w12), wt(wt), w(w), T(T) {
+		double T,
+		int Type): tstep(tstep), w01(w01), w12(w12), wt(wt), w(w), T(T), TYPE(Type) {
 		precalcFidelityAndRotateCheck(tstep, w01, w12);
 	}
 
@@ -127,7 +128,7 @@ public:
 				NewSequence[A] = 1;
 			}
 			else if (sina <= -AmpThreshold) {
-				NewSequence[A] = (TYPE == 3 ? -1 : 1);
+				NewSequence[A] = (TYPE == 3 ? -1: 1);
 			}
 			else {
 				NewSequence[A] = 0;
@@ -197,46 +198,31 @@ public:
 	}
 
 	double NewThetaOptimizer(const vector<int>& InputSequence, double UnOptTheta) {
-		double SmallStep = 0.0005;
-		double BigStep = 0.005;
+		double CurrentStep = 0.01;
+		double MinStep = 1e-9;
+		double PPrecision = 1e-9;
+		double CurrentTheta = UnOptTheta;
+		double PreviousTheta = CurrentTheta;
 
-		double PCrit = 0.01;
-		double StepCrit = 0.15;
-		double P = 0;
-		double Theta = UnOptTheta;
-
-		// Вопрос: что означает константа 0.5?
-		P = RotateCheck(InputSequence, Theta);
-		while (abs(P - 0.5) > PCrit) {
-			double ThetaStep = 0;
-			if (abs(P - 0.5) >= StepCrit) {
-				if (P > 0.5) {
-					ThetaStep = BigStep;
-				}
-				else {
-					ThetaStep = -BigStep;
-				}
+		double P = RotateCheck(InputSequence, CurrentTheta);
+		for(int iteration = 0;iteration < 1000 && abs(P - 0.5) > PPrecision && CurrentStep >= MinStep;++iteration){
+			CurrentTheta = PreviousTheta + CurrentStep;
+			P = RotateCheck(InputSequence, CurrentTheta);
+			if( P < 0.5 ){
+				CurrentStep /= 2.0;
 			}
-			else {
-				if (P > 0.5) {
-					ThetaStep = SmallStep;
-				}
-				else {
-					ThetaStep = -SmallStep;
-				}
+			else{
+				PreviousTheta = CurrentTheta;
 			}
-			Theta += ThetaStep;
-			P = RotateCheck(InputSequence, Theta);
 		}
-
-		return Theta;
+		return CurrentTheta;
 	}
 
-	void WriteSequence(vector<int> InputString) {
+	void WriteSequence(ostream& fout, const vector<int>& InputString, char End='\n') {
 		for (auto& i : InputString) {
-			cout << i;
+			fout << i;
 		}
-		cout << '\n';
+		fout << End;
 	}
 
 	vector<int> ChangingOneElement(vector<int> InputSequence, int index, int type) {
@@ -283,7 +269,7 @@ public:
 		vector<int> BestSequence;
 		double Theta = StartTheta;
 		cout << "Стартовая последовательность\n";
-		WriteSequence(InputString);
+		WriteSequence(cout, InputString);
 		int SequencesNumber = InputString.size() * (TYPE == 3 ? 2 : 1);
 		vector<double> FArray(SequencesNumber, 0);
 		vector<double> AnglesArray(SequencesNumber, 0);
@@ -293,17 +279,17 @@ public:
 				GoldLeak = NewLeak;
 				InputString = BestSequence;
 			}
-#pragma omp parallel shared(InputString, Theta, AnglesArray, FArray)
+			#pragma omp parallel shared(InputString, Theta, AnglesArray, FArray)
 			{
 				int j;
-#pragma omp for private(j)
+				#pragma omp for private(j)
 				for (j = 0; j < SequencesNumber; ++j) {
 					auto SignalString = ChangingOneElement(InputString, j / 2, j % 2);
 					AnglesArray[j] = NewThetaOptimizer(SignalString, Theta);
 					FArray[j] = Fidelity(SignalString, AnglesArray[j]);
 				}
 			}
-
+			
 			double MinLeak = FArray[0];
 			int MinLeakN = 0;
 			for (size_t j = 1; j < FArray.size(); ++j) {
@@ -331,7 +317,7 @@ public:
 		}
 		cout << "Поиск занял " << Gen - 1 << " поколений\n";
 		cout << "Самая лучшая последовательность\n";
-		WriteSequence(BestSequenceOverall);
+		WriteSequence(cout, BestSequenceOverall);
 		cout << "F = " << BestLeakOverall << '\n';
 		cout << "Угол Th = " << BestAngleOverall << '\n';
 	}

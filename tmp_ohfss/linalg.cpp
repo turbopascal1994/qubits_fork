@@ -95,18 +95,21 @@ lapack_int inverse(vector<complex<double>>& A, int n) {
     return ret;
 }
 
-vector<complex<double>> mult(vector<complex<double>>& a, vector<complex<double>>& b, int M, int N, int K, int lda, int lbd, int ldc) {
+vector<complex<double>> mult(vector<complex<double>>& a, vector<complex<double>>& b, int M, int N, int K, int lda, int ldb, int ldc) {
     vector<complex<double>> res(M * N);
-    // MKL_Complex16 one = { 1, 0 };
-    // MKL_Complex16 zero = { 0, 0 };
-    // cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, &one, a.data(), lda, b.data(), lbd, &zero, res.data(), ldc);
-    for(size_t i = 0;i < M;++i) for(size_t j = 0;j < N;++j){
-        complex<double> ans = { 0, 0 };
-        for(size_t k = 0;k < K;++k){
-            ans += a[i * K + k] * b[k * N + j];
+    MKL_Complex16 one = { 1, 0 };
+    MKL_Complex16 zero = { 0, 0 };
+    cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, &one, a.data(), lda, b.data(), ldb, &zero, res.data(), ldc);
+    /*complex<double> ans;
+    for(size_t i = 0;i < M;++i) {
+        for (size_t j = 0; j < N; ++j) {
+            ans = { 0, 0 };
+            for (size_t k = 0; k < K; ++k) {
+                ans += a[i * K + k] * b[k * N + j];
+            }
+            res[i * N + j] = ans;
         }
-        res[i * N + j] = ans;
-    }
+    }*/
     return res;
 }
 
@@ -124,10 +127,10 @@ vector<complex<double>> pow_matrix(vector<complex<double>> a, int step, int N){
 vector<complex<double>> getUMatrix(vector<complex<double>> & Id, vector<complex<double>>& Hr, double tstep, double h, int n){
     vector<complex<double>> up(Id.size());
     vector<complex<double>> down(Id.size());
-    vector<complex<double>> result(Id.size());
-    for(size_t i = 0;i < Id.size();i++){
-        up[i] = Id[i] - complex<double>(0, 1) * Hr[i] * tstep / (h * 2);
-        down[i] = Id[i] + complex<double>(0, 1) * Hr[i] * tstep / (h * 2);
+    complex<double> I(0, 1);
+    for(size_t i = 0;i < Id.size();++i){
+        up[i] = Id[i] - I * Hr[i] * tstep / (h * 2);
+        down[i] = Id[i] + I * Hr[i] * tstep / (h * 2);
     }
 
     /*print_matrix((char *)"UP", n, n, up, n);
