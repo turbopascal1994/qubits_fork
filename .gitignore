@@ -3,3 +3,4 @@
 matlab/
 x64
 VTune Profiler Results/
+.ipynb_checkpoints/**
