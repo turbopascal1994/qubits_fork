@@ -1,4 +1,9 @@
-*.vs
+/.vs
+*.txt
+*.vcxproj*
+result_*
+*.sln
 matlab/
 x64
 VTune Profiler Results/
+.ipynb_checkpoints/
