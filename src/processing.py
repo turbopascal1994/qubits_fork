@@ -1,38 +1,113 @@
-path = input()
+from argparse import ArgumentParser
+import math
+from typing import List, Optional
 
-with open(path, "r") as f:
-    a = f.read()
-    
-a = a.split('\n')
-di = dict()
-for i in a:
-    gg = i.split('\t')
-    if len(gg) <= 1:
-        continue
-    n = int(gg[0].split()[0])
-    gg[0] = gg[0].split()[1]
-    ggg = []
-    for i in gg:
-        if len(i) != 0:
-            ggg.append(i)
-    gg = ggg
-    if n not in di:
-        di[n] = [gg]
-    else :
-        di[n].append(gg)
 
-new_di = dict()
-for i in di:
-    mi = float(di[i][0][-2])
-    pos = di[i][0]
-    for j in di[i]:
-        val = float(j[-2])
-        if mi > val:
-            mi = val
-            pos = j
-    new_di[i] = pos
-    
-for i in new_di:
-    for j in range(-5, 0):
-        print(new_di[i][j], end=' ')
-    print()
+class ResultLog:
+    def __init__(
+        self,
+        cells_number: int,
+        sequence: str,
+        number_of_cycles: int,
+        angle: float,
+        fidelity: float,
+        execution_time: float,
+    ):
+        self.cells_number = cells_number
+        self.sequence = sequence
+        self.number_of_cycles = number_of_cycles
+        self.angle = angle
+        self.fidelity = fidelity
+        self.execution_time = execution_time
+
+
+class Filterer:
+    def __init__(
+        self,
+        angle: Optional[float] = None,
+        module: Optional[float] = None,
+        fidelityUpperBound: Optional[float] = None,
+    ):
+        self.angle = angle
+        self.module = module
+        self.fidelityUpperBound = fidelityUpperBound
+
+    def run(self, array: List[ResultLog]) -> List[ResultLog]:
+        ans = []
+        for log in array:
+            can_take = True
+            if (
+                self.angle is not None
+                and math.abs(log.angle - self.angle) > self.module
+            ):
+                can_take = False
+            if (
+                self.fidelityUpperBound is not None
+                and log.fidelity > self.fidelityUpperBound
+            ):
+                can_take = False
+            if can_take:
+                ans.append(log)
+        return ans
+
+
+def read_file(filename):
+    with open(filename, "r") as f:
+        input = f.read()
+
+    input = input.split("\n")
+    for index, i in enumerate(input):
+        input[index] = i.split()
+    logs = []
+    for i in input:
+        logs.append(
+            ResultLog(int(i[0]), i[1], int(i[2]), float(i[3]), float(i[4]), float(i[5]))
+        )
+    return logs
+
+
+def main(args):
+    logs = read_file(args.filename)
+    result = Filterer(
+        angle=args.angle, module=args.module, fidelityUpperBound=args.fidelity
+    ).run(logs)
+    for log in result:
+        print(
+            log.cells_number,
+            log.number_of_cycles,
+            log.angle,
+            log.fidelity,
+            log.execution_time,
+            sep="\t",
+        )
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--file",
+        dest="filename",
+        default="result.txt",
+        help="Path to the file to be processed.",
+    )
+    parser.add_argument(
+        "--angle",
+        dest="angle",
+        default=None,
+        help="Required angle. If None, then filtering by this attribute is not necessary.",
+    )
+    parser.add_argument(
+        "--module",
+        dest="module",
+        default=None,
+        help="The module that the filtering will be relative to. After filtering, the values will remain such that abs(x - angle) <= module. If angle is None, then skip this attribute.",
+    )
+    parser.add_argument(
+        "--fidelity",
+        dest="fidelity",
+        default=None,
+        help="Upper limit of fidelity. After filtering, fidelity values that are less or equal than the value will remain. If None, then filtering by this attribute is not necessary.",
+    )
+    args = parser.parse_args()
+
+    main(args)
