@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-import math
 from typing import List, Optional
 
 
@@ -24,13 +23,13 @@ class ResultLog:
 class Filterer:
     def __init__(
         self,
-        angle: Optional[float] = None,
-        module: Optional[float] = None,
-        fidelityUpperBound: Optional[float] = None,
+        angle: Optional[str] = None,
+        module: Optional[str] = None,
+        fidelityUpperBound: Optional[str] = None,
     ):
-        self.angle = angle
-        self.module = module
-        self.fidelityUpperBound = fidelityUpperBound
+        self.angle = float(angle) if angle is not None else None
+        self.module = float(module) if module is not None else None
+        self.fidelityUpperBound = float(fidelityUpperBound) if fidelityUpperBound is not None else None
 
     def run(self, array: List[ResultLog]) -> List[ResultLog]:
         ans = []
@@ -38,7 +37,7 @@ class Filterer:
             can_take = True
             if (
                 self.angle is not None
-                and math.abs(log.angle - self.angle) > self.module
+                and abs(log.angle - self.angle) > self.module
             ):
                 can_take = False
             if (
@@ -60,6 +59,8 @@ def read_file(filename):
         input[index] = i.split()
     logs = []
     for i in input:
+        if len(i) != 6:
+            continue
         logs.append(
             ResultLog(int(i[0]), i[1], int(i[2]), float(i[3]), float(i[4]), float(i[5]))
         )
