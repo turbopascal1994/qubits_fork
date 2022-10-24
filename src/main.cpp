@@ -69,7 +69,10 @@ void BruteForce(int CellsNumber = 120, int MaxCells = 120,
 }
 
 void Genetic(int CellsNumber=120, int MaxCells=120,
-			 double w01Coeff=3, double NeededAngle=0.024,
+			 double w01Coeff=3,
+			 double w12Coeff=0.25,
+			 double wtCoeff = 25,
+			 double NeededAngle=0.024,
 			 double FidelityUpperBound=1e-4,
 			 double CrossoverProbability=0.8,
 			 double MutationProbability=0.8,
@@ -77,8 +80,8 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 			 string StringType="bipolar") {
 	int Type = (StringType == "bipolar" ? 3 : 2);
 	double w01 = w01Coeff * 2 * PI * 1e9;
-	const double w12 = w01 - 0.25 * 2 * PI * 1e9;
-	const double wt = 25 * 2 * PI * 1e9;
+	double w12 = w01 - w12Coeff * 2 * PI * 1e9;
+	double wt = wtCoeff * 2 * PI * 1e9;
 	const double w = 4e-12;
 	const double T = PI / wt * 2;
 	const double Theta = 0.001;
@@ -99,6 +102,7 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 	auto nos = algo.getNumberOfCycles();
 
 	string filename = "result_" + to_string(CellsNumber) + "_" + to_string(MaxCells) + "_" + to_string(w01Coeff) +
+						"_" + to_string(w12Coeff) + "_" + to_string(wtCoeff) +
 						"_" + to_string(NeededAngle) + "_" + to_string(FidelityUpperBound) + ".txt";
 	ofstream fout;
 	fout.open(filename, std::ios::app);
@@ -114,16 +118,20 @@ int main(int argc, char** argv) {
 	int CellsNumber = atoi(argv[1]);
 	int MaxCells = atoi(argv[2]);
 	double w01Coeff = atof(argv[3]);
-	double NeededAngle = atof(argv[4]);
-	double FidelityUpperBound = atof(argv[5]);
-	double CrossoverProbability = atof(argv[6]);
-	double MutationProbability = atof(argv[7]);
-	int MaxIter = atoi(argv[8]);
-	string StringType = argv[9];
+	double w12Coeff = atof(argv[4]);
+	double wtCoeff = atof(argv[5]);
+	double NeededAngle = atof(argv[6]);
+	double FidelityUpperBound = atof(argv[7]);
+	double CrossoverProbability = atof(argv[8]);
+	double MutationProbability = atof(argv[9]);
+	int MaxIter = atoi(argv[10]);
+	string StringType = argv[11];
 	Genetic(
 		CellsNumber,
 		MaxCells,
 		w01Coeff,
+		w12Coeff,
+		wtCoeff,
 		NeededAngle,
 		FidelityUpperBound,
 		CrossoverProbability,
