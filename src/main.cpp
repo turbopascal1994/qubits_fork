@@ -77,8 +77,7 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 			 double CrossoverProbability=0.8,
 			 double MutationProbability=0.8,
 			 int MaxIter=500,
-			 string StringType="bipolar") {
-	int Type = (StringType == "bipolar" ? 3 : 2);
+			 int Type=3) {
 	double w01 = w01Coeff * 2 * PI * 1e9;
 	double w12 = w01 - w12Coeff * 2 * PI * 1e9;
 	double wt = wtCoeff * 2 * PI * 1e9;
@@ -114,30 +113,49 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 	fout.close();
 }
 
+map<string, double> preproc_args(int argc, char** argv){
+  map<string, double> mp = {
+    {"len", 120},
+    {"max_len", 120},
+    {"w01", 3},
+    {"w12", 0.25},
+    {"wt", 25},
+    {"angle", 0.024},
+    {"module", 0.0001},
+    {"mp", 0.8},
+    {"cp", 0.8},
+    {"iter", 500},
+    {"type", 3}
+  };
+  for(int i = 1;i < argc;i += 2){
+    string name = argv[i];
+    name = name.substr(2, string::npos);
+    double value;
+    if (name == "type"){
+      string val = argv[i + 1];
+      value = val == "bipolar" ? 3 : 2;
+    } else {
+      value = atof(argv[i + 1]);
+    }
+    mp[name] = value;
+  }
+  return mp;
+}
+
 int main(int argc, char** argv) {
-	int CellsNumber = atoi(argv[1]);
-	int MaxCells = atoi(argv[2]);
-	double w01Coeff = atof(argv[3]);
-	double w12Coeff = atof(argv[4]);
-	double wtCoeff = atof(argv[5]);
-	double NeededAngle = atof(argv[6]);
-	double FidelityUpperBound = atof(argv[7]);
-	double CrossoverProbability = atof(argv[8]);
-	double MutationProbability = atof(argv[9]);
-	int MaxIter = atoi(argv[10]);
-	string StringType = argv[11];
+	auto mp = preproc_args(argc, argv);
 	Genetic(
-		CellsNumber,
-		MaxCells,
-		w01Coeff,
-		w12Coeff,
-		wtCoeff,
-		NeededAngle,
-		FidelityUpperBound,
-		CrossoverProbability,
-		MutationProbability,
-		MaxIter,
-		StringType
+		int(mp["len"]),
+		int(mp["max_len"]),
+		mp["w01"],
+		mp["w12"],
+		mp["wt"],
+		mp["angle"],
+		mp["module"],
+		mp["cp"],
+		mp["mp"],
+		mp["iter"],
+		int(mp["type"])
 	);
 	
 	return 0;
