@@ -9,14 +9,20 @@ class ResultLog:
         sequence: str,
         number_of_cycles: int,
         angle: float,
-        fidelity: float,
+        fidelity1: float,
+        fidelity2: float,
+        fidelity3: float,
+        fidelity12: float,
         execution_time: float,
     ):
         self.cells_number = cells_number
         self.sequence = sequence
         self.number_of_cycles = number_of_cycles
         self.angle = angle
-        self.fidelity = fidelity
+        self.fidelity1 = fidelity1
+        self.fidelity2 = fidelity2
+        self.fidelity3 = fidelity3
+        self.fidelity12 = fidelity12
         self.execution_time = execution_time
 
 
@@ -42,7 +48,7 @@ class Filterer:
                 can_take = False
             if (
                 self.fidelityUpperBound is not None
-                and log.fidelity > self.fidelityUpperBound
+                and log.fidelity3 > self.fidelityUpperBound
             ):
                 can_take = False
             if can_take:
@@ -59,10 +65,19 @@ def read_file(filename):
         input[index] = i.split()
     logs = []
     for i in input:
-        if len(i) != 6:
+        if len(i) != 9:
             continue
         logs.append(
-            ResultLog(int(i[0]), i[1], int(i[2]), float(i[3]), float(i[4]), float(i[5]))
+            ResultLog(
+                cells_number=int(i[0]),
+                sequence=i[1],
+                number_of_cycles=int(i[2]),
+                angle=float(i[3]),
+                fidelity1=float(i[4]),
+                fidelity2=float(i[5]),
+                fidelity3=float(i[6]),
+                fidelity12=float(i[7]),
+                execution_time=float(i[8]))
         )
     return logs
 
@@ -75,9 +90,13 @@ def main(args):
     for log in result:
         print(
             log.cells_number,
+            log.sequence,
             log.number_of_cycles,
             log.angle,
-            log.fidelity,
+            log.fidelity1,
+            log.fidelity2,
+            log.fidelity3,
+            log.fidelity12,
             log.execution_time,
             sep="\t",
         )
