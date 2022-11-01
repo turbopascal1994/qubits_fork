@@ -41,14 +41,14 @@ void BruteForce(int CellsNumber = 120, int MaxCells = 120,
 					to_calc.push_back(seq[j]);
 				}
 				double theta = kernel.NewThetaOptimizer(to_calc, Theta);
-				double f = kernel.Fidelity(to_calc, theta);
-				pair<double, double> cur = { fabs(theta - NeededAngle), f };
+				auto f = kernel.Fidelity(to_calc, theta);
+				pair<double, double> cur = { fabs(theta - NeededAngle), get<2>(f) };
 				if (cur < res) {
 					res = cur;
 					bestSeq = seq;
 					bestLen = len;
 					bestTheta = theta;
-					bestF = f;
+					bestF = get<2>(f);
 				}
 			}
 			return;
@@ -78,6 +78,17 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 			 double MutationProbability=0.8,
 			 int MaxIter=500,
 			 int Type=3) {
+	cout << "CellsNumber = " << CellsNumber << endl;
+	cout << "MaxCells = " << MaxCells << endl;
+	cout << "w01Coeff = " << w01Coeff << endl;
+	cout << "w12Coeff = " << w12Coeff << endl;
+	cout << "wtCoeff = " << wtCoeff << endl;
+	cout << "NeededAngle = " << NeededAngle << endl;
+	cout << "FidelityUpperBound = " << FidelityUpperBound << endl;
+	cout << "CrossoverProbability = " << CrossoverProbability << endl;
+	cout << "MutationProbability = " << MutationProbability << endl;
+	cout << "MaxIter = " << MaxIter << endl;
+	cout << "Type = " << Type << endl;
 	double w01 = w01Coeff * 2 * PI * 1e9;
 	double w12 = w01 - w12Coeff * 2 * PI * 1e9;
 	double wt = wtCoeff * 2 * PI * 1e9;
@@ -109,7 +120,9 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 	fout << CellsNumber << '\t';
 	kernel.WriteSequence(fout, A1Sequence, '\t');
 	fout << nos << '\t';
-	fout << fixed << setprecision(20) << A1Angle << '\t' << A1F << '\t' << exec_time << '\n';
+	fout << fixed << setprecision(20) << A1Angle << '\t';
+	fout << get<0>(A1F) << '\t' << get<1>(A1F) << '\t' << get<2>(A1F) << '\t' << get<3>(A1F) << '\t';
+	fout << '\t' << exec_time << '\n';
 	fout.close();
 }
 
@@ -143,6 +156,7 @@ map<string, double> preproc_args(int argc, char** argv){
 }
 
 int main(int argc, char** argv) {
+	// omp_set_num_threads(1);
 	auto mp = preproc_args(argc, argv);
 	Genetic(
 		int(mp["len"]),
