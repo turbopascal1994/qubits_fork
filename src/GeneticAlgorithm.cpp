@@ -181,7 +181,7 @@ void GeneticAlgorithm::_mutation(vector<int>& a, double p) {
 bool GeneticAlgorithm::_compare(const Individual& a, const Individual& b) {
 	double left_abs = fabs(a.OptimizedTheta - Config.NeededAngle);
 	double right_abs = fabs(b.OptimizedTheta - Config.NeededAngle);
-	if (fabs(left_abs - right_abs) < Config.FidelityUpperBound) {
+	if (fabs(left_abs - right_abs) < Config.AngleUpperBound) {
 		return a.Fidelity < b.Fidelity;
 	}
 	return left_abs < right_abs;

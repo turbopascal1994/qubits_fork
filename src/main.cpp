@@ -73,7 +73,7 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 			 double w12Coeff=0.25,
 			 double wtCoeff = 25,
 			 double NeededAngle=0.024,
-			 double FidelityUpperBound=1e-4,
+			 double AngleUpperBound=1e-4,
 			 double CrossoverProbability=0.8,
 			 double MutationProbability=0.8,
 			 int MaxIter=500,
@@ -84,7 +84,7 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 	cout << "w12Coeff = " << w12Coeff << endl;
 	cout << "wtCoeff = " << wtCoeff << endl;
 	cout << "NeededAngle = " << NeededAngle << endl;
-	cout << "FidelityUpperBound = " << FidelityUpperBound << endl;
+	cout << "AngleUpperBound = " << AngleUpperBound << endl;
 	cout << "CrossoverProbability = " << CrossoverProbability << endl;
 	cout << "MutationProbability = " << MutationProbability << endl;
 	cout << "MaxIter = " << MaxIter << endl;
@@ -103,7 +103,7 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 
 	auto Amps = kernel.CreateAmpThresholds(CellsNumber);
 	auto seq = kernel.CreateStartSCALLOP(CellsNumber, Amps[Amps.size() / 2]);
-	CalculationDescriptor desc(w01, w12, wt, w, T, tstep, Theta, NeededAngle, NumberOfCycles, FidelityUpperBound, Type);
+	CalculationDescriptor desc(w01, w12, wt, w, T, tstep, Theta, NeededAngle, NumberOfCycles, AngleUpperBound, Type);
 	GeneticAlgorithm algo(seq, CrossoverProbability, MutationProbability, MaxIter, desc);
 	auto exec_time = algo.run();
 	auto A1Sequence = algo.getSequence();
@@ -111,9 +111,9 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 	auto A1Angle = algo.getAngle();
 	auto nos = algo.getNumberOfCycles();
 
-	string filename = "result_" + to_string(CellsNumber) + "_" + to_string(MaxCells) + "_" + to_string(w01Coeff) +
-						"_" + to_string(w12Coeff) + "_" + to_string(wtCoeff) +
-						"_" + to_string(NeededAngle) + "_" + to_string(FidelityUpperBound) + ".txt";
+	string filename = "L=" + to_string(CellsNumber) + "_MaxL=" + to_string(MaxCells) + "_w01=" + to_string(w01Coeff) +
+						"_w12=" + to_string(w12Coeff) + "_wt=" + to_string(wtCoeff) +
+						"_Angle=" + to_string(NeededAngle) + "_" + to_string(AngleUpperBound) + ".txt";
 	ofstream fout;
 	fout.open(filename, std::ios::app);
 

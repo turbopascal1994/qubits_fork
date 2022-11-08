@@ -22,16 +22,16 @@ struct CalculationDescriptor {
 	double w01, w12, wt, w, T, Tstep, Theta;
 	int NumberOfCycles;
 	double NeededAngle;
-	double FidelityUpperBound;
+	double AngleUpperBound;
 	int Type;
 	CalculationDescriptor(
 		double w01, double w12, double wt, double w,
 		double T, double Tstep, double Theta,
-		double NeededAngle, int NumberOfCycles, double FidelityUpperBound, int Type) :
+		double NeededAngle, int NumberOfCycles, double AngleUpperBound, int Type) :
 		w01(w01), w12(w12), wt(wt), w(w),
 		T(T), Tstep(Tstep), Theta(Theta),
 		NeededAngle(NeededAngle), NumberOfCycles(NumberOfCycles),
-		FidelityUpperBound(FidelityUpperBound), Type(Type) {}
+		AngleUpperBound(AngleUpperBound), Type(Type) {}
 };
 
 class GeneticAlgorithm
