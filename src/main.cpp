@@ -156,7 +156,7 @@ map<string, double> preproc_args(int argc, char** argv){
 }
 
 int main(int argc, char** argv) {
-	// omp_set_num_threads(1);
+	omp_set_num_threads(1);
 	auto mp = preproc_args(argc, argv);
 	Genetic(
 		int(mp["len"]),
