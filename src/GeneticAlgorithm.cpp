@@ -1,4 +1,5 @@
 #include "GeneticAlgorithm.h"
+#include <algorithm>
 
 GeneticAlgorithm::GeneticAlgorithm(const std::vector<int>& _inputSequence,
 								   double _crossover_probability,
