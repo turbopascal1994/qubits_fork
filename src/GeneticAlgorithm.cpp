@@ -48,10 +48,10 @@ double GeneticAlgorithm::run() {
 				NewPopulation[i * 2 + j] = _createIndividual(parents[j]);
 			}
 		}
-		sort(Population.begin(), Population.end(), [&](const Individual& l, const Individual& r) {
+		std::sort(Population.begin(), Population.end(), [&](const Individual& l, const Individual& r) {
 			return _compare(l, r);
 		});
-		sort(NewPopulation.begin(), NewPopulation.end(), [&](const Individual& l, const Individual& r) {
+		std::sort(NewPopulation.begin(), NewPopulation.end(), [&](const Individual& l, const Individual& r) {
 			return _compare(l, r);
 		});
 		NewPopulation[PopulationSize - 2] = Population[0];
