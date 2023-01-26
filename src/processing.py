@@ -35,16 +35,15 @@ class Filterer:
     ):
         self.angle = float(angle) if angle is not None else None
         self.module = float(module) if module is not None else None
-        self.fidelityUpperBound = float(fidelityUpperBound) if fidelityUpperBound is not None else None
+        self.fidelityUpperBound = (
+            float(fidelityUpperBound) if fidelityUpperBound is not None else None
+        )
 
     def run(self, array: List[ResultLog]) -> List[ResultLog]:
         ans = []
         for log in array:
             can_take = True
-            if (
-                self.angle is not None
-                and abs(log.angle - self.angle) > self.module
-            ):
+            if self.angle is not None and abs(log.angle - self.angle) > self.module:
                 can_take = False
             if (
                 self.fidelityUpperBound is not None
@@ -77,37 +76,67 @@ def read_file(filename):
                 fidelity2=float(i[5]),
                 fidelity3=float(i[6]),
                 fidelity12=float(i[7]),
-                execution_time=float(i[8]))
+                execution_time=float(i[8]),
+            )
         )
     return logs
 
 
+class ResultLogFilename:
+    def __init__(self, filename):
+        filename = filename[:-4]
+        args = filename.split("_")
+        self.params = {}
+        for i in args:
+            self.params[i.split("=")[0]] = i.split("=")[1]
+
+
 def main(args):
-    logs = read_file(args.filename)
-    result = Filterer(
-        angle=args.angle, module=args.module, fidelityUpperBound=args.fidelity
-    ).run(logs)
-    for log in result:
-        print(
-            log.cells_number,
-            log.sequence,
-            log.number_of_cycles,
-            log.angle,
-            log.fidelity1,
-            log.fidelity2,
-            log.fidelity3,
-            log.fidelity12,
-            log.execution_time,
-            sep="\t",
-        )
+    import os
+    from collections import defaultdict
+
+    files = os.listdir(args.folder)
+    final_dict = defaultdict(list)
+    for file in files:
+        filename_params = ResultLogFilename(file)
+        logs = read_file(os.path.join(args.folder, file))
+        filtered = Filterer(
+            angle=args.angle, module=args.module, fidelityUpperBound=args.fidelity
+        ).run(logs)
+        filtered = sorted(filtered, key=lambda x: x.fidelity3)
+        if len(filtered) > 0:
+            final_dict[filename_params.params["w01"]].append(filtered[0])
+
+    for key, val in final_dict.items():
+        with open(key + ".txt", "w") as f:
+            for log in val:
+                f.write(
+                    str(log.cells_number)
+                    + "\t"
+                    + str(log.sequence)
+                    + "\t"
+                    + str(log.number_of_cycles)
+                    + "\t"
+                    + str(log.angle)
+                    + "\t"
+                    + str(log.fidelity1)
+                    + "\t"
+                    + str(log.fidelity2)
+                    + "\t"
+                    + str(log.fidelity3)
+                    + "\t"
+                    + str(log.fidelity12)
+                    + "\t"
+                    + str(log.execution_time)
+                    + "\n"
+                )
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
-        "--file",
-        dest="filename",
-        default="result.txt",
+        "--folder",
+        dest="folder",
         help="Path to the file to be processed.",
     )
     parser.add_argument(
