@@ -8,7 +8,7 @@
 
 using namespace std;
 
-void eig(vector<complex<double>>& H0, vector<complex<double>>& EigVec, vector<complex<double>>& EigVal, int N);
+void eig(vector<complex<double>>& H0, vector<complex<double>>& EigVecLeft, vector<complex<double>>& EigVecRight, vector<complex<double>>& EigVal, int N);
 lapack_int inverse(std::vector<complex<double>>& A, int n);
 vector<complex<double>> getUMatrix(vector<complex<double>>& Id, vector<complex<double>>& Hr, double tstep, double h, int n);
 void print_matrix(char* desc, MKL_INT m, MKL_INT n, const vector<double>& a, MKL_INT lda);

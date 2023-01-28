@@ -63,13 +63,15 @@ vector<MKL_Complex16> convertToMKL(vector<complex<double>>& a) {
 
 vector<complex<double>> convertToSTD(vector<MKL_Complex16>& a) {
     vector<complex<double>> ans(a.size());
+    std::cout << a.size() << std::endl;
     for (size_t i = 0; i < a.size(); i++) {
+        // std::cout << a[i].real << ' ' << a[i].imag << std::endl;
         ans[i] = { a[i].real, a[i].imag };
     }
     return ans;
 }
 
-void eig(vector<complex<double>>& H0, vector<complex<double>>& EigVec, vector<complex<double>>& EigVal, int N){
+void eig(vector<complex<double>>& H0, vector<complex<double>>& EigVecLeft, vector<complex<double>>& EigVecRight, vector<complex<double>>& EigVal, int N){
     vector<MKL_Complex16> vl(N * N), vr(N * N), matrix = convertToMKL(H0), w(N * N);
 
     int rev = LAPACKE_zgeev(LAPACK_ROW_MAJOR, 'V', 'V', N, matrix.data(), N, w.data(), vl.data(), N, vr.data(), N);
@@ -77,8 +79,10 @@ void eig(vector<complex<double>>& H0, vector<complex<double>>& EigVec, vector<co
         cout << "Error occured after LAPACKE_zgeev\n";
         exit(1);
     }
-    EigVal = convertToSTD(w);
-    EigVec = convertToSTD(vl);
+    auto qwe = convertToSTD(w);
+    std::cout << "! " << qwe.size() << std::endl;
+    EigVecLeft = convertToSTD(vl);
+    EigVecRight = convertToSTD(vr);
 }   
 
 lapack_int inverse(vector<complex<double>>& A, int n) {
