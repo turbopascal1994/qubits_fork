@@ -8,8 +8,9 @@ void Kernel::precalcFidelityAndRotateCheck(double tstep, double w01, double w12)
 
 	H0 = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {h * w01, 0}, {0, 0}, {0, 0}, {0, 0}, {h * (w01 + w12), 0} };
 	EigVec.resize(9);
+	EigVecRight.resize(9);
 	EigVal.resize(3);
-	eig(H0, EigVec, EigVal, 3);
+	eig(H0, EigVec, EigVecRight, EigVal, 3);
 
 	vector<int> indices = { 0, 1, 2 };
 	sort(indices.begin(), indices.end(), [&](int a, int b) {

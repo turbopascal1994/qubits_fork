@@ -13,7 +13,7 @@ void print_matrix(char* desc, MKL_INT m, MKL_INT n, const vector<complex<double>
     printf("\n %s\n", desc);
     for (MKL_INT i = 0; i < m; i++) {
         for (MKL_INT j = 0; j < n; j++)
-            cout << fixed << setprecision(30) << "( " << a[i * lda + j].real() << ";" << a[i * lda + j].imag() << ") ";
+            cout << "( " << a[i * lda + j].real() << ";" << a[i * lda + j].imag() << ") ";
         cout << '\n';
     }
 }
@@ -63,9 +63,7 @@ vector<MKL_Complex16> convertToMKL(vector<complex<double>>& a) {
 
 vector<complex<double>> convertToSTD(vector<MKL_Complex16>& a) {
     vector<complex<double>> ans(a.size());
-    std::cout << a.size() << std::endl;
     for (size_t i = 0; i < a.size(); i++) {
-        // std::cout << a[i].real << ' ' << a[i].imag << std::endl;
         ans[i] = { a[i].real, a[i].imag };
     }
     return ans;
@@ -79,8 +77,7 @@ void eig(vector<complex<double>>& H0, vector<complex<double>>& EigVecLeft, vecto
         cout << "Error occured after LAPACKE_zgeev\n";
         exit(1);
     }
-    auto qwe = convertToSTD(w);
-    std::cout << "! " << qwe.size() << std::endl;
+    EigVal = convertToSTD(w);
     EigVecLeft = convertToSTD(vl);
     EigVecRight = convertToSTD(vr);
 }   
