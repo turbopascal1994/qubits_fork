@@ -101,10 +101,22 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 
 	Kernel kernel(tstep, w01, w12, wt, w, T, Type);
 
-	auto Amps = kernel.CreateAmpThresholds(CellsNumber);
-	auto seq = kernel.CreateStartSCALLOP(CellsNumber, Amps[Amps.size() / 2]);
+	/*auto Amps = kernel.CreateAmpThresholds(CellsNumber);
+	auto seq = kernel.CreateStartSCALLOP(CellsNumber, Amps[Amps.size() / 2]);*/
+	vector<vector<int>> seqs(5 * CellsNumber);
+	vector<int> vals = { -2, -1, 0, 1, 2 };
+	uniform_int_distribution<> dist(0, (int)vals.size() - 1);
+	random_device rd;
+	mt19937 gen(rd());
+	for (auto& seq : seqs) {
+		seq.resize(CellsNumber);
+		for (auto& j : seq) {
+			j = vals[dist(gen)];
+		}
+	}
+
 	CalculationDescriptor desc(w01, w12, wt, w, T, tstep, Theta, NeededAngle, NumberOfCycles, AngleUpperBound, Type);
-	GeneticAlgorithm algo(seq, CrossoverProbability, MutationProbability, MaxIter, desc);
+	GeneticAlgorithm algo(seqs, CrossoverProbability, MutationProbability, MaxIter, desc);
 	auto exec_time = algo.run();
 	auto A1Sequence = algo.getSequence();
 	auto A1F = algo.getLeak();
@@ -128,17 +140,17 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 
 map<string, double> preproc_args(int argc, char** argv){
   map<string, double> mp = {
-    {"len", 120},
-    {"max_len", 120},
-    {"w01", 3},
+    {"len", 70},
+    {"max_len", 70},
+    {"w01", 4.54643},
     {"w12", 0.25},
     {"wt", 25},
-    {"angle", 0.024},
+    {"angle", 0.032},
     {"module", 0.0001},
     {"mp", 0.8},
     {"cp", 0.8},
-    {"iter", 500},
-    {"type", 3}
+    {"iter", 50},
+    {"type", 5}
   };
   for(int i = 1;i < argc;i += 2){
     string name = argv[i];

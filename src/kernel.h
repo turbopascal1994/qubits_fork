@@ -16,7 +16,18 @@ class Kernel {
 	vector<complex<double>> Id, H0, EigVec, EigVal, WF1, WF2, WF3, Hmatrix, InitStates;
 
 	void precalcFidelityAndRotateCheck(double tstep, double w01, double w12);
-	double calcProbability(int N, const vector<int>& InputSequence,	const int CyclePlusMinusSteps, const int CycleZeroSteps, const vector<complex<double>>& UPlus, const vector<complex<double>>& UMinus, const vector<complex<double>>& UZero, vector<complex<double>>& WF, const vector<complex<double>>& WF1);
+	double calcProbability(
+		int N,
+		const vector<int>& InputSequence,
+		const int CyclePlusMinusSteps,
+		const int CycleZeroSteps,
+		const vector<complex<double>>& UPlus,
+		const vector<complex<double>>& UPlus2,
+		const vector<complex<double>>& UMinus,
+		const vector<complex<double>>& UMinus2,
+		const vector<complex<double>>& UZero,
+		vector<complex<double>>& WF,
+		const vector<complex<double>>& WF1);
 	double RotateCheck(const vector<int>& InputSequence, double Theta);
 public:
 	Kernel(

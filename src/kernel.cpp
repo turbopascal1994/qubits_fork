@@ -27,15 +27,30 @@ void Kernel::precalcFidelityAndRotateCheck(double tstep, double w01, double w12)
 	};
 };
 
-double Kernel::calcProbability(int N, const vector<int>& InputSequence, const int CyclePlusMinusSteps, const int CycleZeroSteps, const vector<complex<double>>& UPlus, const vector<complex<double>>& UMinus, const vector<complex<double>>& UZero, vector<complex<double>>& WF, const vector<complex<double>>& WF1) {
-	auto UPlus80 = pow_matrix(UPlus, CyclePlusMinusSteps, N);
-	auto UMinus80 = pow_matrix(UMinus, CyclePlusMinusSteps, N);
-	auto UZero80 = pow_matrix(UZero, CyclePlusMinusSteps, N);
-	auto UZero720 = pow_matrix(UZero, CycleZeroSteps, N);
+double Kernel::calcProbability(
+		int N,
+		const vector<int>& InputSequence,
+		const int CyclePlusMinusSteps,
+		const int CycleZeroSteps,
+		const vector<complex<double>>& UPlus,
+		const vector<complex<double>>& UPlus2,
+		const vector<complex<double>>& UMinus,
+		const vector<complex<double>>& UMinus2,
+		const vector<complex<double>>& UZero,
+		vector<complex<double>>& WF,
+		const vector<complex<double>>& WF1) {
+	auto UPlus_80 = pow_matrix(UPlus, CyclePlusMinusSteps, N);
+	auto UPlus2_80 = pow_matrix(UPlus2, CyclePlusMinusSteps, N);
+	auto UMinus_80 = pow_matrix(UMinus, CyclePlusMinusSteps, N);
+	auto UMinus2_80 = pow_matrix(UMinus2, CyclePlusMinusSteps, N);
+	auto UZero_80 = pow_matrix(UZero, CyclePlusMinusSteps, N);
+	auto UZero_720 = pow_matrix(UZero, CycleZeroSteps, N);
 
-	auto UPlusZero = mult(UPlus80, UZero720, N, N, N, N, N, N);
-	auto UMinusZero = mult(UMinus80, UZero720, N, N, N, N, N, N);
-	auto UZeroZero = mult(UZero80, UZero720, N, N, N, N, N, N);
+	auto UPlusZero = mult(UPlus_80, UZero_720, N, N, N, N, N, N);
+	auto UPlus2Zero = mult(UPlus2_80, UZero_720, N, N, N, N, N, N);
+	auto UMinusZero = mult(UMinus_80, UZero_720, N, N, N, N, N, N);
+	auto UMinus2Zero = mult(UMinus2_80, UZero_720, N, N, N, N, N, N);
+	auto UZeroZero = mult(UZero_80, UZero_720, N, N, N, N, N, N);
 
 	vector<complex<double>> resU(N * N);
 	for (int i = 0; i < N; i++) resU[i * N + i] = { 1, 0 };
@@ -46,6 +61,12 @@ double Kernel::calcProbability(int N, const vector<int>& InputSequence, const in
 		}
 		else if (InputSequence[i] == 1) {
 			U = UPlusZero;
+		}
+		else if (InputSequence[i] == -2) {
+			U = UMinus2Zero;
+		}
+		else if (InputSequence[i] == 2) {
+			U = UPlus2Zero;
 		}
 		WF = mult(U, WF, N, 1, N, N, 1, 1);
 	}
@@ -70,20 +91,26 @@ double Kernel::RotateCheck(const vector<int>& InputSequence, double Theta) {
 
 	vector<complex<double>> WF(WF1);
 	vector<complex<double>> HrPlus(H0.size());
+	vector<complex<double>> HrPlus2(H0.size());
 	vector<complex<double>> HrMinus(H0.size());
+	vector<complex<double>> HrMinus2(H0.size());
 	vector<complex<double>> HrZero(H0.size());
 
 	for (int i = 0; i < H0.size(); i++) {
 		HrPlus[i] = { H0[i].real(), Amp * Hmatrix[i].real() };
+		HrPlus2[i] = { H0[i].real(), Amp * Hmatrix[i].real() * 2 };
 		HrMinus[i] = { H0[i].real(), -Amp * Hmatrix[i].real() };
+		HrMinus2[i] = { H0[i].real(), -Amp * Hmatrix[i].real() * 2 };
 		HrZero[i] = H0[i];
 	}
 
 	auto UPlus = getUMatrix(Id, HrPlus, tstep, h, 3);
+	auto UPlus2 = getUMatrix(Id, HrPlus2, tstep, h, 3);
 	auto UMinus = getUMatrix(Id, HrMinus, tstep, h, 3);
+	auto UMinus2 = getUMatrix(Id, HrMinus2, tstep, h, 3);
 	auto UZero = getUMatrix(Id, HrZero, tstep, h, 3);
 
-	return calcProbability(3, InputSequence, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF1);
+	return calcProbability(3, InputSequence, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UPlus2, UMinus, UMinus2, UZero, WF, WF1);
 }
 vector<int> Kernel::CreateStartSCALLOP(int M, double AmpThreshold) {
 	double Tt = PI * 2 / wt;
@@ -142,24 +169,31 @@ tuple<double, double, double, double> Kernel::Fidelity(const vector<int>& Signal
 	int CycleZeroSteps = CycleSteps - CyclePlusMinusSteps;
 
 	vector<complex<double>> HrPlus(H0.size());
+	vector<complex<double>> HrPlus2(H0.size());
 	vector<complex<double>> HrMinus(H0.size());
+	vector<complex<double>> HrMinus2(H0.size());
 	vector<complex<double>> HrZero(H0.size());
-	for (size_t i = 0; i < H0.size(); ++i) {
+
+	for (int i = 0; i < H0.size(); i++) {
 		HrPlus[i] = { H0[i].real(), Amp * Hmatrix[i].real() };
+		HrPlus2[i] = { H0[i].real(), Amp * Hmatrix[i].real() * 2 };
 		HrMinus[i] = { H0[i].real(), -Amp * Hmatrix[i].real() };
+		HrMinus2[i] = { H0[i].real(), -Amp * Hmatrix[i].real() * 2 };
 		HrZero[i] = H0[i];
 	}
 
 	auto UPlus = getUMatrix(Id, HrPlus, tstep, h, 3);
+	auto UPlus2 = getUMatrix(Id, HrPlus2, tstep, h, 3);
 	auto UMinus = getUMatrix(Id, HrMinus, tstep, h, 3);
+	auto UMinus2 = getUMatrix(Id, HrMinus2, tstep, h, 3);
 	auto UZero = getUMatrix(Id, HrZero, tstep, h, 3);
 
 	double sum1 = 0, sum2 = 0, sum3 = 0;
 	for (size_t IS = 0; IS < 6; ++IS) {
 		vector<complex<double>> WF = { InitStates[IS], InitStates[IS + 6], InitStates[IS + 12] };
-		sum1 += calcProbability(3, SignalString, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF1);
-		sum2 += calcProbability(3, SignalString, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF2);
-		sum3 += calcProbability(3, SignalString, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF3);
+		sum1 += calcProbability(3, SignalString, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UPlus2, UMinus, UMinus2, UZero, WF, WF1);
+		sum2 += calcProbability(3, SignalString, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UPlus2, UMinus, UMinus2, UZero, WF, WF2);
+		sum3 += calcProbability(3, SignalString, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UPlus2, UMinus, UMinus2, UZero, WF, WF3);
 	}
 	return make_tuple(sum1 / 6, sum2 / 6, sum3 / 6, 1 - (sum1 + sum2) / 6);
 }

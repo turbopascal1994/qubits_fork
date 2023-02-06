@@ -167,14 +167,16 @@ void GeneticAlgorithm::_crossover(vector<int>& a, vector<int>& b) {
 
 void GeneticAlgorithm::_mutation(vector<int>& a, double p) {
 	vector<int> tmp;
-	tmp.reserve(3);
+	tmp.reserve(5);
+	uniform_int_distribution<> dist(0, Config.Type - 1);
 	for (int i = 0; i < a.size(); i++) {
 		if (_generateProbability() < p) {
 			if (Config.Type == 2) tmp = { 0, 1 };
-			else tmp = { -1, 0, 1 };
+			else if (Config.Type == 3) tmp = { -1, 0, 1 };
+			else if (Config.Type == 5) tmp = { -2, -1, 0, 1, 2 };
+
 			tmp.erase(find(tmp.begin(), tmp.end(), a[i]));
-			if (tmp.size() == 1) a[i] = tmp[0];
-			else a[i] = tmp[_generateProbability() * 2 < 1.0];
+			a[i] = tmp[dist(RandomGenerator)];
 		}
 	}
 }
