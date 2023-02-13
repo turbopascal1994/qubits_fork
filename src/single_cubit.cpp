@@ -10,13 +10,15 @@
 #include <map>
 #include <vector>
 #include "GeneticAlgorithm.h"
+#include <numeric>
 
 using namespace std;
 
 void BruteForce(int CellsNumber = 120, int MaxCells = 120,
-				double w01Coeff = 4, double NeededAngle = 0.032,
-				string StringType = "bipolar") {
+	double w01Coeff = 4.68842, double NeededAngle = 0.032,
+	string StringType = "bipolar") {
 	int Type = (StringType == "bipolar" ? 3 : 2);
+	w01Coeff = 4.59251;
 	double w01 = w01Coeff * 2 * PI * 1e9;
 	const double w12 = w01 - 0.25 * 2 * PI * 1e9;
 	const double wt = 25 * 2 * PI * 1e9;
@@ -25,59 +27,40 @@ void BruteForce(int CellsNumber = 120, int MaxCells = 120,
 	const double Theta = 0.001;
 	const double tstep = 5e-14;
 
-	const int NumberOfCycles = (MaxCells + CellsNumber - 1) / CellsNumber;
-
 	Kernel kernel(tstep, w01, w12, wt, w, T, Type);
-	vector<int> seq(CellsNumber);
-	pair<double, double> res = { INT_MAX, INT_MAX };
-	vector<int> bestSeq;
-	int bestLen;
-	double bestTheta, bestF;
-	function<void(int)> calc = [&](int pos) {
-		if (pos == CellsNumber) {
-			vector<int> to_calc;
-			for (int len = 1; len <= NumberOfCycles; ++len) {
-				for (int j = 0; j < CellsNumber; ++j) {
-					to_calc.push_back(seq[j]);
-				}
-				double theta = kernel.NewThetaOptimizer(to_calc, Theta);
-				auto f = kernel.Fidelity(to_calc, theta);
-				pair<double, double> cur = { fabs(theta - NeededAngle), get<2>(f) };
-				if (cur < res) {
-					res = cur;
-					bestSeq = seq;
-					bestLen = len;
-					bestTheta = theta;
-					bestF = get<2>(f);
-				}
+	vector<int> reps = { 2,2,4,3,4,2,2,2,2,3,3,3,1,2,4,3,4,2,1 };
+	vector<int> seq;
+		
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < reps.size(); j++) {
+			for (int iter = 0; iter < reps[j]; iter++) {
+				seq.push_back((j % 2) ^ 1);
 			}
-			return;
 		}
-		seq[pos] = -1;
-		calc(pos + 1);
+	}
+	
+	double theta = kernel.NewThetaOptimizer(seq, 0.001);
+	tuple<double, double, double, double> f = kernel.Fidelity(seq, theta);
 
-		seq[pos] = 0;
-		calc(pos + 1);
-
-		seq[pos] = 1;
-		calc(pos + 1);
-	};
-	calc(0);
-	kernel.WriteSequence(cout, bestSeq, '\t');
-	cout << bestLen << '\t';
-	cout << fixed << setprecision(8) << "Theta = " << bestTheta << '\t' << "F = " << bestF << '\n';
+	cout << w01Coeff << ' ';
+	for (int i = 0; i < accumulate(reps.begin(), reps.end(), 0); i++) {
+		cout << seq[i];
+	}
+	cout << ' ';
+	cout << fixed << setprecision(10) << theta << ' '
+		<< get<0>(f) << ' ' << get<1>(f) << ' ' << get<2>(f) << ' ' << get<3>(f) << '\n';
 }
 
-void Genetic(int CellsNumber=120, int MaxCells=120,
-			 double w01Coeff=3,
-			 double w12Coeff=0.25,
-			 double wtCoeff = 25,
-			 double NeededAngle=0.024,
-			 double AngleUpperBound=1e-4,
-			 double CrossoverProbability=0.8,
-			 double MutationProbability=0.8,
-			 int MaxIter=500,
-			 int Type=3) {
+void Genetic(int CellsNumber = 120, int MaxCells = 120,
+	double w01Coeff = 3,
+	double w12Coeff = 0.25,
+	double wtCoeff = 25,
+	double NeededAngle = 0.024,
+	double AngleUpperBound = 1e-4,
+	double CrossoverProbability = 0.8,
+	double MutationProbability = 0.8,
+	int MaxIter = 500,
+	int Type = 3) {
 	cout << "CellsNumber = " << CellsNumber << endl;
 	cout << "MaxCells = " << MaxCells << endl;
 	cout << "w01Coeff = " << w01Coeff << endl;
@@ -112,8 +95,8 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 	auto nos = algo.getNumberOfCycles();
 
 	string filename = "L=" + to_string(CellsNumber) + "_MaxL=" + to_string(MaxCells) + "_w01=" + to_string(w01Coeff) +
-						"_w12=" + to_string(w12Coeff) + "_wt=" + to_string(wtCoeff) +
-						"_Angle=" + to_string(NeededAngle) + "_" + to_string(AngleUpperBound) + ".txt";
+		"_w12=" + to_string(w12Coeff) + "_wt=" + to_string(wtCoeff) +
+		"_Angle=" + to_string(NeededAngle) + "_" + to_string(AngleUpperBound) + ".txt";
 	ofstream fout;
 	fout.open(filename, std::ios::app);
 
@@ -126,38 +109,39 @@ void Genetic(int CellsNumber=120, int MaxCells=120,
 	fout.close();
 }
 
-map<string, double> preproc_args(int argc, char** argv){
-  map<string, double> mp = {
-    {"len", 120},
-    {"max_len", 120},
-    {"w01", 3},
-    {"w12", 0.25},
-    {"wt", 25},
-    {"angle", 0.024},
-    {"module", 0.0001},
-    {"mp", 0.8},
-    {"cp", 0.8},
-    {"iter", 500},
-    {"type", 3}
-  };
-  for(int i = 1;i < argc;i += 2){
-    string name = argv[i];
-    name = name.substr(2, string::npos);
-    double value;
-    if (name == "type"){
-      string val = argv[i + 1];
-      value = val == "bipolar" ? 3 : 2;
-    } else {
-      value = atof(argv[i + 1]);
-    }
-    mp[name] = value;
-  }
-  return mp;
+map<string, double> preproc_args(int argc, char** argv) {
+	map<string, double> mp = {
+	  {"len", 120},
+	  {"max_len", 120},
+	  {"w01", 3},
+	  {"w12", 0.25},
+	  {"wt", 25},
+	  {"angle", 0.024},
+	  {"module", 0.0001},
+	  {"mp", 0.8},
+	  {"cp", 0.8},
+	  {"iter", 500},
+	  {"type", 3}
+	};
+	for (int i = 1; i < argc; i += 2) {
+		string name = argv[i];
+		name = name.substr(2, string::npos);
+		double value;
+		if (name == "type") {
+			string val = argv[i + 1];
+			value = val == "bipolar" ? 3 : 2;
+		}
+		else {
+			value = atof(argv[i + 1]);
+		}
+		mp[name] = value;
+	}
+	return mp;
 }
 
 int main(int argc, char** argv) {
 	omp_set_num_threads(4);
-	auto mp = preproc_args(argc, argv);
+	/*auto mp = preproc_args(argc, argv);
 	Genetic(
 		int(mp["len"]),
 		int(mp["max_len"]),
@@ -170,7 +154,8 @@ int main(int argc, char** argv) {
 		mp["mp"],
 		mp["iter"],
 		int(mp["type"])
-	);
-	
+	);*/
+	BruteForce(120, 120, 4, 0.032, "unipolar");
+
 	return 0;
 }
