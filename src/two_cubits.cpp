@@ -6,6 +6,7 @@
 #include <math.h>
 #include <complex>
 #include <mkl.h>
+#include <omp.h>
 #include "linalg.h"
 
 using namespace std;
@@ -151,15 +152,19 @@ vector<complex<TYPE>> ltmp1(L* L);
 vector<complex<TYPE>> ltmp2(L* L);
 vector<complex<TYPE>> ltmp3(L* L);
 
-void FillIdentity(vector<complex<TYPE>>& A) {
-	fill(A.begin(), A.end(), 0);
-	int dim = sqrt(A.size());
+void FillIdentity(vector<complex<TYPE>>& A, int dim) {
 	for (size_t i = 0; i < dim; ++i) {
 		A[i * dim + i] = 1;
 	}
 }
 
-void vAdd(const vector<complex<TYPE>>& A, const vector<complex<TYPE>>& B, vector<complex<TYPE>>& Res) {
+void matadd(const vector<complex<TYPE>>& A, const vector<complex<TYPE>>& B, vector<complex<TYPE>>& Res, int N) {
+	/*Res = B;
+	vector<complex<TYPE>> Id(N * N);
+	FillIdentity(Id, N);
+	MKL_Complex16 one = { 1, 0 };
+	MKL_Complex16 zero = { 0, 0 };
+	cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, N, N, N, &one, A.data(), N, Id.data(), N, &one, Res.data(), N);*/
 	for (size_t i = 0; i < A.size(); ++i) {
 		Res[i] = A[i] + B[i];
 	}
@@ -191,6 +196,7 @@ void kMul(const vector<complex<TYPE>>& A, const vector<complex<TYPE>>& B, vector
 }
 
 int main() {
+	double time = omp_get_wtime();
 	Cc = Theta / (sqrtl(2 * wt * F0 * F0) / (sqrtl(hh) * sqrtl(C1)));
 	A = 2 * Cc * V * sqrtl((hh * wt) / (C1 * 2));
 	d2 = d / 2.0;
@@ -209,31 +215,27 @@ int main() {
 	}
 
 	NN = linalg::matmul(H2, H1, Nm, Nm, Nm, Nm, Nm, Nm);
-	vAdd(H1, H2, H1H2);
+	matadd(H1, H2, H1H2, Nm);
 
-	FillIdentity(Identity);
-	FillIdentity(lIdentity);
+	FillIdentity(Identity, Nm);
+	FillIdentity(lIdentity, L);
 	vsMul(Identity, -1.0, nIdentity);
 
 	// гамильтонианы отдельных кубитов размерностью NxN
 	vsMul(NN, complex<TYPE>(hh * w0q1), tmp1);
-	vAdd(NN, nIdentity, tmp2);
+	matadd(NN, nIdentity, tmp2, Nm);
 	tmp3 = linalg::matmul(NN, tmp2, Nm, Nm, Nm, Nm, Nm, Nm);
-	// mmMul(NN, tmp2, tmp3);
 	vsMul(tmp3, complex<TYPE>(0.5 * mu1 * hh), tmp4);
-	vAdd(tmp1, tmp4, H0q1);
-
-
+	matadd(tmp1, tmp4, H0q1, Nm);
 
 	vsMul(NN, complex<TYPE>(hh * w0q2), tmp1);
-	vAdd(NN, nIdentity, tmp2);
+	matadd(NN, nIdentity, tmp2, Nm);
 	tmp3 = linalg::matmul(NN, tmp2, Nm, Nm, Nm, Nm, Nm, Nm);
-	// mmMul(NN, tmp2, tmp3);
 	vsMul(tmp3, complex<TYPE>(0.5 * mu2 * hh), tmp4);
-	vAdd(tmp1, tmp4, H0q2);
+	matadd(tmp1, tmp4, H0q2, Nm);
 
-	linalg::print_matrix("H0q1", Nm, Nm, H0q1, Nm);
-	linalg::print_matrix("H0q2", Nm, Nm, H0q2, Nm);
+	/*linalg::print_matrix("H0q1", Nm, Nm, H0q1, Nm);
+	linalg::print_matrix("H0q2", Nm, Nm, H0q2, Nm);*/
 
 	// // Гамильтониан взаимодействия
 	kMul(H1H2, H1H2, H12);
@@ -244,21 +246,22 @@ int main() {
 	kMul(Identity, H0q2, H02);
 
 	// // Cтационарный гамильтониан двухкубитной системы
-	vAdd(H01, H02, ltmp1);
-	vAdd(ltmp1, HInteration, H0);
+	matadd(H01, H02, ltmp1, L);
+	matadd(ltmp1, HInteration, H0, L);
 
-	linalg::print_matrix("H0", L, L, H0, L);
+	//linalg::print_matrix("H0", L, L, H0, L);
 
 	// // Вычисление собственных чисел и векторов стационарного гамильтониана двухкубитной системы
 	linalg::eig(H0, EigVectorsL, EigVectorsR, EigValues, L);
 
 	/*linalg::print_matrix("EigVectorsR 1", L, 1, EigVectorsR, L);*/
+	/*
 	int index = 2;
 	cout << EigValues[index] << '\n';
 	for (int i = 0; i < L; i++) {
 		cout << EigVectorsR[i * L + index] << '\n';
 	}
-	linalg::print_matrix("EigValues", L, 1, EigValues, 1);
+	linalg::print_matrix("EigValues", L, 1, EigValues, 1);*/
 
 	/*for (int index = 0; index < L; ++index) {
 		cout << "EigVal = " << EigValues[index] << ";\t";
@@ -295,23 +298,15 @@ int main() {
 		return EigValues[el1].real() < EigValues[el2].real();
 	});
 
-	/*IndexEigValuesAndVectors = { 1, 8, 7, 3, 4, 2, 6, 5, 0};
-
-	for (int i = 0; i < L; i++) {
-		cout << EigValues[IndexEigValuesAndVectors[i]].real() << '\t';
-	}
-	cout << '\n';
-	cout << '\n';
-	*/
-	cout << "EVEA\n";
+	/*cout << "EVEA\n";
 	for(int j = 0;j < L;j++, cout << '\n')
 	for (int i = 0; i < L; i++) {
 		cout << EigVectorsR[j * L + IndexEigValuesAndVectors[i]].real() << '\t';
 	}
-	cout << '\n';
+	cout << '\n';*/
 	
 
-	kMul(H1H2, Identity, V1);
+	// kMul(H1H2, Identity, V1);
 	kMul(Identity, H1H2, V2);
 
 	CurEigVectorNumber = 2;
@@ -319,23 +314,25 @@ int main() {
 		CurEigVector[i] = EigVectorsR[i * L + IndexEigValuesAndVectors[CurEigVectorNumber]];
 	}
 
-	linalg::print_matrix("CurEigVector", L, 1, CurEigVector, 1);
+	// linalg::print_matrix("CurEigVector", L, 1, CurEigVector, 1);
 
-	for (int i = 0; i < M; i++) {
-		Ap[i] = A;
-	}
+	Ap.assign(M, A);
 	
+	// Инициализация потоков вывода
+	const int PRECISION = 10;
 	vector<ofstream> fouts(L + 1);
 	for (int i = 0; i < L; ++i) {
 		string filename = "results/P" + to_string(i + 1) + "(t)_C++.txt";
 		fouts[i].open(filename);
-		fouts[i].precision(10);
+		fouts[i].precision(PRECISION);
 	}
 	fouts[L].open("results/t_C++.txt");
-	fouts[L].precision(10);
+	fouts[L].precision(PRECISION);
 
-	// StepsNumber = 10;
-	cout << StepsNumber << '\n';
+	// ltmp2 == H01 + H02 + HInteration
+	matadd(H01, H02, ltmp1, L);
+	matadd(ltmp1, HInteration, ltmp2, L);
+
 	for (int step = 0; step < StepsNumber; step++) {
 		int dstep; // ??? Номер периода ...
 		TCurrent = step * dt;
@@ -356,15 +353,13 @@ int main() {
 		}
 
 		//  Аппроксимация Паде
-		vAdd(H01, H02, ltmp1);
-		vAdd(ltmp1, HInteration, ltmp2);
 		vsMul(V2, Ka, ltmp3);
-		vAdd(ltmp2, ltmp3, Hr);
+		matadd(ltmp2, ltmp3, Hr, L);
 
 		vsMul(Hr, complex<TYPE>( - Ic * ddt / hh), ltmp1);
-		vAdd(lIdentity, ltmp1, Rr);
+		matadd(lIdentity, ltmp1, Rr, L);
 		vsMul(Hr, complex<TYPE>( + Ic * ddt / hh), ltmp1);
-		vAdd(lIdentity, ltmp1, Rl);
+		matadd(lIdentity, ltmp1, Rl, L);
 
 		linalg::inverse(Rl, L); // Вычисление обратной матрицы для Rl
 	     
@@ -386,7 +381,8 @@ int main() {
 			}
 		}
 	}
-
+	time = omp_get_wtime() - time;
+	cout << "TIME ELAPSED = " << time << '\n';
 	return 0;
 }
 
