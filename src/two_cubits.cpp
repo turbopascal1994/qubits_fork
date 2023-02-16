@@ -180,7 +180,6 @@ void mvMul(const vector<complex<TYPE>>& A, const vector<complex<TYPE>>& B, vecto
 	}
 }
 
-
 void kMul(const vector<complex<TYPE>>& A, const vector<complex<TYPE>>& B, vector<complex<TYPE>>& Res) {
 	int dim = sqrt(sqrt(Res.size()));
 	for (size_t i = 0; i < dim * dim; ++i) {
@@ -192,8 +191,8 @@ void kMul(const vector<complex<TYPE>>& A, const vector<complex<TYPE>>& B, vector
 }
 
 int main() {
-	Cc = Theta / (sqrt((2 * wt * F0 * F0)) / (sqrt(hh) * sqrt(C1)));
-	A = 2 * Cc * V * sqrt((hh * wt) / (2 * C1));
+	Cc = Theta / (sqrtl(2 * wt * F0 * F0) / (sqrtl(hh) * sqrtl(C1)));
+	A = 2 * Cc * V * sqrtl((hh * wt) / (C1 * 2));
 	d2 = d / 2.0;
 
 	// операторы рождения, уничтожения и их сумма, оператор числа частиц
@@ -205,8 +204,8 @@ int main() {
 
 	H1[1] = H2[Nm] = 1;
 	for (int i = 1; i < Nm - 1; i++) {
-		H1[i * Nm + i + 1] = { sqrt(i + 1), 0 };
-		H2[(i + 1) * Nm + i] = { sqrt(i + 1), 0 };
+		H1[i * Nm + i + 1] = { sqrtl(i + 1), 0 };
+		H2[(i + 1) * Nm + i] = { sqrtl(i + 1), 0 };
 	}
 
 	NN = linalg::matmul(H2, H1, Nm, Nm, Nm, Nm, Nm, Nm);
@@ -261,7 +260,7 @@ int main() {
 	}
 	linalg::print_matrix("EigValues", L, 1, EigValues, 1);
 
-	for (int index = 0; index < L; ++index) {
+	/*for (int index = 0; index < L; ++index) {
 		cout << "EigVal = " << EigValues[index] << ";\t";
 		TYPE ma = 0;
 		for (int i = 0; i < L; ++i) {
@@ -287,7 +286,7 @@ int main() {
 		for (auto& i : x) cout << i << ' ';
 		cout << '\n';
 	}
-	return 0;
+	return 0;*/
 
 	// // Сортировка собственных чисел по возрастанию действительной части
 	iota(IndexEigValuesAndVectors.begin(), IndexEigValuesAndVectors.end(), 0);
@@ -296,19 +295,21 @@ int main() {
 		return EigValues[el1].real() < EigValues[el2].real();
 	});
 
-	IndexEigValuesAndVectors = { 1, 8, 7, 3, 4, 2, 6, 5, 0};
+	/*IndexEigValuesAndVectors = { 1, 8, 7, 3, 4, 2, 6, 5, 0};
 
 	for (int i = 0; i < L; i++) {
 		cout << EigValues[IndexEigValuesAndVectors[i]].real() << '\t';
 	}
 	cout << '\n';
 	cout << '\n';
-
+	*/
+	cout << "EVEA\n";
 	for(int j = 0;j < L;j++, cout << '\n')
 	for (int i = 0; i < L; i++) {
 		cout << EigVectorsR[j * L + IndexEigValuesAndVectors[i]].real() << '\t';
 	}
 	cout << '\n';
+	
 
 	kMul(H1H2, Identity, V1);
 	kMul(Identity, H1H2, V2);
@@ -328,9 +329,13 @@ int main() {
 	for (int i = 0; i < L; ++i) {
 		string filename = "results/P" + to_string(i + 1) + "(t)_C++.txt";
 		fouts[i].open(filename);
+		fouts[i].precision(10);
 	}
 	fouts[L].open("results/t_C++.txt");
+	fouts[L].precision(10);
 
+	// StepsNumber = 10;
+	cout << StepsNumber << '\n';
 	for (int step = 0; step < StepsNumber; step++) {
 		int dstep; // ??? Номер периода ...
 		TCurrent = step * dt;
@@ -367,15 +372,18 @@ int main() {
 
 		mvMul(dU, CurEigVector, UpdatedVector);
 		std::swap(CurEigVector, UpdatedVector);
+		// linalg::print_matrix("CurEigVector", L, 1, CurEigVector, 1);
 
-		fouts[L] << TCurrent / 1e-9 << '\n';
-		if (fabs(Ka) < 1e-25) for (int i = 0; i < L; ++i) {
-			complex<TYPE> dot_product = 0;
-			for (int j = 0; j < L; ++j) {
-				dot_product += conj(EigVectorsR[j * L + IndexEigValuesAndVectors[i]]) * CurEigVector[j];
+		fouts[L] << TCurrent / 1e-9 << ' ' << Ka << '\n';
+		if (Ka != 0) {
+			for (int i = 0; i < L; ++i) {
+				complex<TYPE> dot_product = 0;
+				for (int j = 0; j < L; ++j) {
+					dot_product += conj(EigVectorsR[j * L + IndexEigValuesAndVectors[i]]) * CurEigVector[j];
+				}
+				TYPE res = norm(dot_product);
+				fouts[i] << TCurrent / 1e-9 << ' ' << res << '\n';
 			}
-			TYPE res = abs(dot_product) * abs(dot_product);
-			fouts[i] << TCurrent / 1e-9 << ' ' << res << '\n';
 		}
 	}
 
