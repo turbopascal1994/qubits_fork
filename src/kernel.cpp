@@ -8,8 +8,9 @@ void Kernel::precalcFidelityAndRotateCheck(double tstep, double w01, double w12)
 
 	H0 = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {h * w01, 0}, {0, 0}, {0, 0}, {0, 0}, {h * (w01 + w12), 0} };
 	EigVec.resize(9);
+	EigVecRight.resize(9);
 	EigVal.resize(3);
-	eig(H0, EigVec, EigVal, 3);
+	linalg::eig(H0, EigVec, EigVecRight, EigVal, 3);
 
 	vector<int> indices = { 0, 1, 2 };
 	sort(indices.begin(), indices.end(), [&](int a, int b) {
@@ -28,14 +29,14 @@ void Kernel::precalcFidelityAndRotateCheck(double tstep, double w01, double w12)
 };
 
 double Kernel::calcProbability(int N, const vector<int>& InputSequence, const int CyclePlusMinusSteps, const int CycleZeroSteps, const vector<complex<double>>& UPlus, const vector<complex<double>>& UMinus, const vector<complex<double>>& UZero, vector<complex<double>>& WF, const vector<complex<double>>& WF1) {
-	auto UPlus80 = pow_matrix(UPlus, CyclePlusMinusSteps, N);
-	auto UMinus80 = pow_matrix(UMinus, CyclePlusMinusSteps, N);
-	auto UZero80 = pow_matrix(UZero, CyclePlusMinusSteps, N);
-	auto UZero720 = pow_matrix(UZero, CycleZeroSteps, N);
+	auto UPlus80 = linalg::matpow(UPlus, CyclePlusMinusSteps, N);
+	auto UMinus80 = linalg::matpow(UMinus, CyclePlusMinusSteps, N);
+	auto UZero80 = linalg::matpow(UZero, CyclePlusMinusSteps, N);
+	auto UZero720 = linalg::matpow(UZero, CycleZeroSteps, N);
 
-	auto UPlusZero = mult(UPlus80, UZero720, N, N, N, N, N, N);
-	auto UMinusZero = mult(UMinus80, UZero720, N, N, N, N, N, N);
-	auto UZeroZero = mult(UZero80, UZero720, N, N, N, N, N, N);
+	auto UPlusZero = linalg::matmul(UPlus80, UZero720, N, N, N, N, N, N);
+	auto UMinusZero = linalg::matmul(UMinus80, UZero720, N, N, N, N, N, N);
+	auto UZeroZero = linalg::matmul(UZero80, UZero720, N, N, N, N, N, N);
 
 	vector<complex<double>> resU(N * N);
 	for (int i = 0; i < N; i++) resU[i * N + i] = { 1, 0 };
@@ -47,7 +48,7 @@ double Kernel::calcProbability(int N, const vector<int>& InputSequence, const in
 		else if (InputSequence[i] == 1) {
 			U = UPlusZero;
 		}
-		WF = mult(U, WF, N, 1, N, N, 1, 1);
+		WF = linalg::matmul(U, WF, N, 1, N, N, 1, 1);
 	}
 
 	complex<double> res = { 0, 0 };
@@ -79,9 +80,9 @@ double Kernel::RotateCheck(const vector<int>& InputSequence, double Theta) {
 		HrZero[i] = H0[i];
 	}
 
-	auto UPlus = getUMatrix(Id, HrPlus, tstep, h, 3);
-	auto UMinus = getUMatrix(Id, HrMinus, tstep, h, 3);
-	auto UZero = getUMatrix(Id, HrZero, tstep, h, 3);
+	auto UPlus = linalg::getUMatrix(Id, HrPlus, tstep, h, 3);
+	auto UMinus = linalg::getUMatrix(Id, HrMinus, tstep, h, 3);
+	auto UZero = linalg::getUMatrix(Id, HrZero, tstep, h, 3);
 
 	return calcProbability(3, InputSequence, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF1);
 }
@@ -150,9 +151,9 @@ tuple<double, double, double, double> Kernel::Fidelity(const vector<int>& Signal
 		HrZero[i] = H0[i];
 	}
 
-	auto UPlus = getUMatrix(Id, HrPlus, tstep, h, 3);
-	auto UMinus = getUMatrix(Id, HrMinus, tstep, h, 3);
-	auto UZero = getUMatrix(Id, HrZero, tstep, h, 3);
+	auto UPlus = linalg::getUMatrix(Id, HrPlus, tstep, h, 3);
+	auto UMinus = linalg::getUMatrix(Id, HrMinus, tstep, h, 3);
+	auto UZero = linalg::getUMatrix(Id, HrZero, tstep, h, 3);
 
 	double sum1 = 0, sum2 = 0, sum3 = 0;
 	for (size_t IS = 0; IS < 6; ++IS) {
