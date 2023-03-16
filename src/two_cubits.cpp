@@ -309,7 +309,7 @@ int main() {
 	// kMul(H1H2, Identity, V1);
 	kMul(Identity, H1H2, V2);
 
-	CurEigVectorNumber = 2;
+	CurEigVectorNumber = 8;
 	for (int i = 0; i < L; i++) {
 		CurEigVector[i] = EigVectorsR[i * L + IndexEigValuesAndVectors[CurEigVectorNumber]];
 	}
@@ -380,6 +380,14 @@ int main() {
 				fouts[i] << TCurrent / 1e-9 << ' ' << res << '\n';
 			}
 		}
+	}
+	for (int i = 0; i < L; ++i) {
+		complex<TYPE> dot_product = 0;
+		for (int j = 0; j < L; ++j) {
+			dot_product += conj(EigVectorsR[j * L + IndexEigValuesAndVectors[i]]) * CurEigVector[j];
+		}
+		TYPE res = norm(dot_product);
+		cout << res << '\n';
 	}
 	time = omp_get_wtime() - time;
 	cout << "TIME ELAPSED = " << time << '\n';
