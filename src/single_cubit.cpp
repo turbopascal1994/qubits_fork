@@ -141,7 +141,7 @@ map<string, double> preproc_args(int argc, char** argv) {
 
 int main(int argc, char** argv) {
 	omp_set_num_threads(4);
-	/*auto mp = preproc_args(argc, argv);
+	auto mp = preproc_args(argc, argv);
 	Genetic(
 		int(mp["len"]),
 		int(mp["max_len"]),
@@ -154,8 +154,8 @@ int main(int argc, char** argv) {
 		mp["mp"],
 		mp["iter"],
 		int(mp["type"])
-	);*/
-	BruteForce(120, 120, 4, 0.032, "unipolar");
+	);
+	// BruteForce(120, 120, 4, 0.032, "unipolar");
 
 	return 0;
 }
