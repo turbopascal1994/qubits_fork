@@ -44,7 +44,7 @@ class GeneticAlgorithm
 	CalculationDescriptor Config;
 	mt19937 RandomGenerator;
 	Kernel Kernel;
-	tuple<double, double, double, double> BestLeak;
+	Kernel::FidelityResult BestLeak;
 	double BestAngle;
 	int BestNumberOfCycles;
 	vector<int> BestSequence;
@@ -52,7 +52,7 @@ class GeneticAlgorithm
 	void _createPopulation(const vector<int>& sequence);
 	Individual _createIndividual(const vector<int>& sequence);
 	double _optimizedTheta(const vector<int>& Sequence);
-	tuple<double, double, double, double> _fidelity(const vector<int>& sequence, double theta);
+	Kernel::FidelityResult _fidelity(const vector<int>& sequence, double theta);
 	vector<vector<int>> _tournament();
 	double _generateProbability();
 	int _generateInt(int l, int r);
@@ -66,7 +66,7 @@ public:
 					 double _mutation_probability, int _maxIter, CalculationDescriptor _config);
 	double run();
 	void reset();
-	tuple<double, double, double, double> getLeak();
+	Kernel::FidelityResult getLeak();
 	double getAngle();
 	vector<int> getSequence();
 	int getNumberOfCycles();
