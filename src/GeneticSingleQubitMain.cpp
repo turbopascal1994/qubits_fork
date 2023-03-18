@@ -14,43 +14,6 @@
 
 using namespace std;
 
-void BruteForce(int CellsNumber = 120, int MaxCells = 120,
-	double w01Coeff = 4.68842, double NeededAngle = 0.032,
-	string StringType = "bipolar") {
-	int Type = (StringType == "bipolar" ? 3 : 2);
-	w01Coeff = 4.59251;
-	double w01 = w01Coeff * 2 * PI * 1e9;
-	const double w12 = w01 - 0.25 * 2 * PI * 1e9;
-	const double wt = 25 * 2 * PI * 1e9;
-	const double w = 4e-12;
-	const double T = PI / wt * 2;
-	const double Theta = 0.001;
-	const double tstep = 5e-14;
-
-	Kernel kernel(tstep, w01, w12, wt, w, T, Type);
-	vector<int> reps = { 2,2,4,3,4,2,2,2,2,3,3,3,1,2,4,3,4,2,1 };
-	vector<int> seq;
-		
-	for (int i = 0; i < 6; i++) {
-		for (int j = 0; j < reps.size(); j++) {
-			for (int iter = 0; iter < reps[j]; iter++) {
-				seq.push_back((j % 2) ^ 1);
-			}
-		}
-	}
-	
-	double theta = kernel.NewThetaOptimizer(seq, 0.001);
-	tuple<double, double, double, double> f = kernel.Fidelity(seq, theta);
-
-	cout << w01Coeff << ' ';
-	for (int i = 0; i < accumulate(reps.begin(), reps.end(), 0); i++) {
-		cout << seq[i];
-	}
-	cout << ' ';
-	cout << fixed << setprecision(10) << theta << ' '
-		<< get<0>(f) << ' ' << get<1>(f) << ' ' << get<2>(f) << ' ' << get<3>(f) << '\n';
-}
-
 void Genetic(int CellsNumber = 120, int MaxCells = 120,
 	double w01Coeff = 3,
 	double w12Coeff = 0.25,
@@ -82,10 +45,10 @@ void Genetic(int CellsNumber = 120, int MaxCells = 120,
 
 	const int NumberOfCycles = (MaxCells + CellsNumber - 1) / CellsNumber;
 
-	Kernel kernel(tstep, w01, w12, wt, w, T, Type);
+	Kernel kernel(tstep, w01, w12, wt, w, T);
 
 	auto Amps = kernel.CreateAmpThresholds(CellsNumber);
-	auto seq = kernel.CreateStartSCALLOP(CellsNumber, Amps[Amps.size() / 2]);
+	auto seq = kernel.CreateStartSCALLOP(CellsNumber, Amps[Amps.size() / 2], Type);
 	CalculationDescriptor desc(w01, w12, wt, w, T, tstep, Theta, NeededAngle, NumberOfCycles, AngleUpperBound, Type);
 	GeneticAlgorithm algo(seq, CrossoverProbability, MutationProbability, MaxIter, desc);
 	auto exec_time = algo.run();
@@ -104,7 +67,7 @@ void Genetic(int CellsNumber = 120, int MaxCells = 120,
 	kernel.WriteSequence(fout, A1Sequence, '\t');
 	fout << nos << '\t';
 	fout << fixed << setprecision(20) << A1Angle << '\t';
-	fout << get<0>(A1F) << '\t' << get<1>(A1F) << '\t' << get<2>(A1F) << '\t' << get<3>(A1F) << '\t';
+	fout << A1F.leak << ' ' << 1 - A1F.fidelity << '\t';
 	fout << '\t' << exec_time << '\n';
 	fout.close();
 }
@@ -155,7 +118,5 @@ int main(int argc, char** argv) {
 		mp["iter"],
 		int(mp["type"])
 	);
-	// BruteForce(120, 120, 4, 0.032, "unipolar");
-
 	return 0;
 }

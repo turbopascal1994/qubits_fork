@@ -26,67 +26,81 @@ void Kernel::precalcFidelityAndRotateCheck(double tstep, double w01, double w12)
 		{0, 0}, {1, 0}, {1.0 / sqrt(2), 0}, {-1.0 / sqrt(2), 0}, {0, 1.0 / sqrt(2)}, {0, -1.0 / sqrt(2)},
 		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}
 	};
+	IdealStates = {
+		{1.0 / sqrt(2), 0}, {-1.0 / sqrt(2), 0}, {0, 0}, {1, 0}, {0.5, -0.5}, {0.5, 0.5},
+		{1.0 / sqrt(2), 0}, {1.0 / sqrt(2), 0}, {1, 0}, {0, 0}, {0.5, 0.5}, {0.5, -0.5},
+		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}
+	};
 };
 
-double Kernel::calcProbability(int N, const vector<int>& InputSequence, const int CyclePlusMinusSteps, const int CycleZeroSteps, const vector<complex<double>>& UPlus, const vector<complex<double>>& UMinus, const vector<complex<double>>& UZero, vector<complex<double>>& WF, const vector<complex<double>>& WF1) {
-	auto UPlus80 = linalg::matpow(UPlus, CyclePlusMinusSteps, N);
-	auto UMinus80 = linalg::matpow(UMinus, CyclePlusMinusSteps, N);
-	auto UZero80 = linalg::matpow(UZero, CyclePlusMinusSteps, N);
-	auto UZero720 = linalg::matpow(UZero, CycleZeroSteps, N);
-
-	auto UPlusZero = linalg::matmul(UPlus80, UZero720, N, N, N, N, N, N);
-	auto UMinusZero = linalg::matmul(UMinus80, UZero720, N, N, N, N, N, N);
-	auto UZeroZero = linalg::matmul(UZero80, UZero720, N, N, N, N, N, N);
-
-	vector<complex<double>> resU(N * N);
-	for (int i = 0; i < N; i++) resU[i * N + i] = { 1, 0 };
+Kernel::IntegrationResult Kernel::integration(
+	int N,
+	const vector<int>& InputSequence, 
+	const vector<complex<double>>& UTZero,
+	const vector<complex<double>>& UTMinus,
+	const vector<complex<double>>& UTPlus,
+	vector<complex<double>>& WF
+) {
 	for (int i = 0; i < InputSequence.size(); i++) {
-		vector<complex<double>> U = UZeroZero;
+		vector<complex<double>> U = UTZero;
 		if (InputSequence[i] == -1) {
-			U = UMinusZero;
+			U = UTMinus;
 		}
 		else if (InputSequence[i] == 1) {
-			U = UPlusZero;
+			U = UTPlus;
 		}
 		WF = linalg::matmul(U, WF, N, 1, N, N, 1, 1);
 	}
 
-	complex<double> res = { 0, 0 };
+	complex<double> l0(0), l1(0), l2(0);
 	for (int i = 0; i < N; i++) {
-		res += WF[i] * conj(WF1[i]);
+		l0 += WF[i] * conj(WF1[i]);
+		l1 += WF[i] * conj(WF2[i]);
+		l2 += WF[i] * conj(WF3[i]);
 	}
-	return norm(res);
+	return {norm(l0), norm(l1), norm(l2), WF};
 };
 
-double Kernel::RotateCheck(const vector<int>& InputSequence, double Theta) {
+void Kernel::prepareUMatrices(double Theta, vector<complex<double>>& UTZero, vector<complex<double>>& UTMinus, vector<complex<double>>& UTPlus) {
 	double V = F0 / w;
 	double Cc = Theta / (F0 * sqrt(2.0 * w01 / (h * C1)));
 	double Amp = Cc * V * sqrt(h * w01 / (2.0 * C1));
-	int CellsNumber = InputSequence.size();
 
 	//	Число тактов с импульсом и без него на одном периоде тактовой частоты генератора
 	int CycleSteps = floor(T / tstep + 0.5);
 	int CyclePlusMinusSteps = floor(CycleSteps * w / T + 0.5);
 	int CycleZeroSteps = CycleSteps - CyclePlusMinusSteps;
 
-	vector<complex<double>> WF(WF1);
 	vector<complex<double>> HrPlus(H0.size());
 	vector<complex<double>> HrMinus(H0.size());
 	vector<complex<double>> HrZero(H0.size());
-
-	for (int i = 0; i < H0.size(); i++) {
+	for (size_t i = 0; i < H0.size(); ++i) {
 		HrPlus[i] = { H0[i].real(), Amp * Hmatrix[i].real() };
 		HrMinus[i] = { H0[i].real(), -Amp * Hmatrix[i].real() };
 		HrZero[i] = H0[i];
 	}
 
-	auto UPlus = linalg::getUMatrix(Id, HrPlus, tstep, h, 3);
-	auto UMinus = linalg::getUMatrix(Id, HrMinus, tstep, h, 3);
-	auto UZero = linalg::getUMatrix(Id, HrZero, tstep, h, 3);
+	auto UZeroStep = linalg::getUMatrix(Id, HrZero, tstep, h, 3);
+	auto UMinusStep = linalg::getUMatrix(Id, HrMinus, tstep, h, 3);
+	auto UPlusStep = linalg::getUMatrix(Id, HrPlus, tstep, h, 3);
 
-	return calcProbability(3, InputSequence, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF1);
+	auto UZero = linalg::matpow(UZeroStep, CyclePlusMinusSteps, 3);
+	auto UMinus = linalg::matpow(UMinusStep, CyclePlusMinusSteps, 3);
+	auto UPlus = linalg::matpow(UPlusStep, CyclePlusMinusSteps, 3);
+
+	auto UT = linalg::matpow(UZeroStep, CycleZeroSteps, 3);
+
+	UTZero = linalg::matmul(UT, UZero, 3, 3, 3, 3, 3, 3);
+	UTMinus = linalg::matmul(UT, UMinus, 3, 3, 3, 3, 3, 3);
+	UTPlus = linalg::matmul(UT, UPlus, 3, 3, 3, 3, 3, 3);
 }
-vector<int> Kernel::CreateStartSCALLOP(int M, double AmpThreshold) {
+double Kernel::RotateCheck(const vector<int>& InputSequence, double Theta) {
+	vector<complex<double>> WF(WF1);
+	vector<complex<double>> UTZero, UTMinus, UTPlus;
+	prepareUMatrices(Theta, UTZero, UTMinus, UTPlus);
+	return integration(3, InputSequence, UTZero, UTMinus, UTPlus, WF).level0;
+}
+vector<int> Kernel::CreateStartSCALLOP(int M, double AmpThreshold, int TYPE) {
 	double Tt = PI * 2 / wt;
 
 	vector<int> NewSequence(M);
@@ -130,39 +144,24 @@ vector<double> Kernel::CreateAmpThresholds(const int M) {
 	}
 	return AmpsArray;
 }
-tuple<double, double, double, double> Kernel::Fidelity(const vector<int>& SignalString, double Theta) {
-	int CellsNumber = SignalString.size();
-
-	double V = F0 / w;
-	double Cc = Theta / (F0 * sqrt(2.0 * w01 / (h * C1)));
-	double Amp = Cc * V * sqrt(h * w01 / (2.0 * C1));
-
-	//	Число тактов с импульсом и без него на одном периоде тактовой частоты генератора
-	int CycleSteps = floor(T / tstep + 0.5);
-	int CyclePlusMinusSteps = floor(CycleSteps * w / T + 0.5);
-	int CycleZeroSteps = CycleSteps - CyclePlusMinusSteps;
-
-	vector<complex<double>> HrPlus(H0.size());
-	vector<complex<double>> HrMinus(H0.size());
-	vector<complex<double>> HrZero(H0.size());
-	for (size_t i = 0; i < H0.size(); ++i) {
-		HrPlus[i] = { H0[i].real(), Amp * Hmatrix[i].real() };
-		HrMinus[i] = { H0[i].real(), -Amp * Hmatrix[i].real() };
-		HrZero[i] = H0[i];
-	}
-
-	auto UPlus = linalg::getUMatrix(Id, HrPlus, tstep, h, 3);
-	auto UMinus = linalg::getUMatrix(Id, HrMinus, tstep, h, 3);
-	auto UZero = linalg::getUMatrix(Id, HrZero, tstep, h, 3);
-
-	double sum1 = 0, sum2 = 0, sum3 = 0;
+Kernel::FidelityResult Kernel::Fidelity(const vector<int>& SignalString, double Theta) {
+	double leak = 0, fidelity = 0;
+	vector<complex<double>> UTZero, UTMinus, UTPlus;
+	prepareUMatrices(Theta, UTZero, UTMinus, UTPlus);
 	for (size_t IS = 0; IS < 6; ++IS) {
 		vector<complex<double>> WF = { InitStates[IS], InitStates[IS + 6], InitStates[IS + 12] };
-		sum1 += calcProbability(3, SignalString, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF1);
-		sum2 += calcProbability(3, SignalString, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF2);
-		sum3 += calcProbability(3, SignalString, CyclePlusMinusSteps, CycleZeroSteps, UPlus, UMinus, UZero, WF, WF3);
+		vector<complex<double>> ideal = { IdealStates[IS], IdealStates[IS + 6], IdealStates[IS + 12] };
+		auto res = integration(3, SignalString, UTZero, UTMinus, UTPlus, WF);
+		leak += res.level2;
+		complex<double> dot_product(0);
+		for (int i = 0; i < 3; ++i) {
+			dot_product += res.state[i] * conj(ideal[i]);
+		}
+		fidelity += norm(dot_product);
 	}
-	return make_tuple(sum1 / 6, sum2 / 6, sum3 / 6, 1 - (sum1 + sum2) / 6);
+	leak /= 6;
+	fidelity /= 6;
+	return { fidelity, leak };
 }
 double Kernel::NewThetaOptimizer(const vector<int>& InputSequence, double UnOptTheta) {
 	double CurrentStep = 0.01;
@@ -190,7 +189,7 @@ void Kernel::WriteSequence(ostream& fout, const vector<int>& InputString, char E
 	}
 	fout << End;
 }
-vector<int> Kernel::ChangingOneElement(vector<int> InputSequence, int index, int type) {
+vector<int> Kernel::ChangingOneElement(vector<int> InputSequence, int index, int type, int TYPE) {
 	if (TYPE != 3) {
 		InputSequence[index] ^= 1;
 		return InputSequence;
@@ -221,63 +220,3 @@ vector<int> Kernel::ChangingOneElement(vector<int> InputSequence, int index, int
 	}
 	return InputSequence;
 }
-void Kernel::GenSearch(vector<int> InputString, double StartTheta, vector<int>& BestSequenceOverall, double& BestLeakOverall, double& BestAngleOverall) {
-	int Gen = 1;
-	double NewLeak = 0;
-	double GoldLeak = 1;
-	vector<int> BestSequence;
-	double Theta = StartTheta;
-	cout << "Стартовая последовательность\n";
-	WriteSequence(cout, InputString);
-	int SequencesNumber = InputString.size() * (TYPE == 3 ? 2 : 1);
-	vector<double> FArray(SequencesNumber, 0);
-	vector<double> AnglesArray(SequencesNumber, 0);
-
-	while (NewLeak < GoldLeak) {
-		if (Gen > 1) {
-			GoldLeak = NewLeak;
-			InputString = BestSequence;
-		}
-#pragma omp parallel shared(InputString, Theta, AnglesArray, FArray)
-		{
-			int j;
-#pragma omp for private(j)
-			for (j = 0; j < SequencesNumber; ++j) {
-				auto SignalString = ChangingOneElement(InputString, j / 2, j % 2);
-				AnglesArray[j] = NewThetaOptimizer(SignalString, Theta);
-				FArray[j] = get<2>(Fidelity(SignalString, AnglesArray[j]));
-			}
-		}
-
-		double MinLeak = FArray[0];
-		int MinLeakN = 0;
-		for (size_t j = 1; j < FArray.size(); ++j) {
-			if (FArray[j] < MinLeak) {
-				MinLeak = FArray[j];
-				MinLeakN = j;
-			}
-		}
-		BestSequence = ChangingOneElement(InputString, MinLeakN / 2, MinLeakN % 2);
-		auto BestAngle = AnglesArray[MinLeakN];
-
-		/*cout << "Поколение #" << Gen << '\n';
-		cout << "Минимальная утечка у последовательности ";
-		for (auto& i : BestSequence) cout << i;
-		cout << '\n';
-		cout << "F = " << MinLeak << '\n';
-		cout << "Угол Th = " << BestAngle << '\n';*/
-		NewLeak = MinLeak;
-		if (NewLeak < GoldLeak) {
-			BestLeakOverall = MinLeak;
-			BestSequenceOverall = BestSequence;
-			BestAngleOverall = BestAngle;
-		}
-		++Gen;
-	}
-	cout << "Поиск занял " << Gen - 1 << " поколений\n";
-	cout << "Самая лучшая последовательность\n";
-	WriteSequence(cout, BestSequenceOverall);
-	cout << "F = " << BestLeakOverall << '\n';
-	cout << "Угол Th = " << BestAngleOverall << '\n';
-}
-;

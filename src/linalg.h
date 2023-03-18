@@ -58,7 +58,7 @@ namespace linalg {
     }
     
     template<typename T>
-    vector<complex<T>> getUMatrix(vector<complex<T>>& Id, vector<complex<T>>& Hr, T tstep, T h, int n) {
+    vector<complex<T>> getUMatrix(const vector<complex<T>>& Id, const vector<complex<T>>& Hr, T tstep, T h, int n) {
         vector<complex<T>> up(Id.size());
         vector<complex<T>> down(Id.size());
         complex<T> I(0, 1);

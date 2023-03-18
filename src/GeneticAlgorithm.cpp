@@ -8,7 +8,7 @@ GeneticAlgorithm::GeneticAlgorithm(const std::vector<int>& _inputSequence,
 								   CalculationDescriptor _config) :
 	CrossoverProbability(_crossover_probability),
 	MutationProbability(_mutation_probability), MaxIter(_maxIter), Config(_config),
-	Kernel(Config.Tstep, Config.w01, Config.w12, Config.wt, Config.w, Config.T, Config.Type),
+	Kernel(Config.Tstep, Config.w01, Config.w12, Config.wt, Config.w, Config.T),
 	RandomGenerator(mt19937(chrono::high_resolution_clock::now().time_since_epoch().count())) {
 		reset();
 		_createPopulation(_inputSequence);
@@ -21,7 +21,7 @@ GeneticAlgorithm::GeneticAlgorithm(const std::vector<vector<int>>& _inputPopulat
 								   CalculationDescriptor _config) :
 	CrossoverProbability(_crossover_probability),
 	MutationProbability(_mutation_probability), MaxIter(_maxIter), Config(_config),
-	Kernel(Config.Tstep, Config.w01, Config.w12, Config.wt, Config.w, Config.T, Config.Type),
+	Kernel(Config.Tstep, Config.w01, Config.w12, Config.wt, Config.w, Config.T),
 	RandomGenerator(mt19937(chrono::high_resolution_clock::now().time_since_epoch().count())) {
 		reset();
 		PopulationSize = _inputPopulation.size();
@@ -70,12 +70,12 @@ double GeneticAlgorithm::run() {
 }
 
 void GeneticAlgorithm::reset() {
-	BestLeak = make_tuple(numeric_limits<double>::max(), numeric_limits<double>::max(), numeric_limits<double>::max(), numeric_limits<double>::max());
+	BestLeak = { numeric_limits<double>::max(), numeric_limits<double>::max() };
 	BestAngle = -1;
 	BestSequence.clear();
 }
 
-tuple<double, double, double, double> GeneticAlgorithm::getLeak() {
+Kernel::FidelityResult GeneticAlgorithm::getLeak() {
 	return BestLeak;
 }
 
@@ -96,7 +96,7 @@ void GeneticAlgorithm::_createPopulation(const vector<int>& sequence) {
 	Population.reserve(2 * sequence.size() + 1);
 	Population.push_back(_createIndividual(sequence));
 	for (int i = 0; i < sequence.size() * 2; i++) {
-		Population.push_back(_createIndividual(Kernel.ChangingOneElement(sequence, i / 2, i % 2)));
+		Population.push_back(_createIndividual(Kernel.ChangingOneElement(sequence, i / 2, i % 2, Config.Type)));
 	}
 	PopulationSize = Population.size();
 }
@@ -113,9 +113,10 @@ Individual GeneticAlgorithm::_createIndividual(const vector<int>& sequence) {
 		for (size_t j = 0; j < sequence.size(); ++j) {
 			cur_seq.push_back(sequence[j]);
 		}
+		
 		double OptimizedTheta = _optimizedTheta(cur_seq);
-		double F = get<2>(_fidelity(cur_seq, OptimizedTheta));
-		pair<double, double> cur_Q = { fabs(OptimizedTheta - Config.NeededAngle), F };
+		auto res = _fidelity(cur_seq, OptimizedTheta);
+		pair<double, double> cur_Q = { fabs(OptimizedTheta - Config.NeededAngle), 1 - res.fidelity};
 		if (cur_Q < Q) {
 			Q = cur_Q;
 			Theta = OptimizedTheta;
@@ -129,7 +130,7 @@ double GeneticAlgorithm::_optimizedTheta(const vector<int>& Sequence) {
 	return Kernel.NewThetaOptimizer(Sequence, Config.Theta);
 }
 
-tuple<double, double, double, double> GeneticAlgorithm::_fidelity(const vector<int>& Sequence, double Theta) {
+Kernel::FidelityResult GeneticAlgorithm::_fidelity(const vector<int>& Sequence, double Theta) {
 	return Kernel.Fidelity(Sequence, Theta);
 }
 
