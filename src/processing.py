@@ -1,29 +1,17 @@
 from argparse import ArgumentParser
+from dataclasses import dataclass
 from typing import List, Optional
 
 
+@dataclass
 class ResultLog:
-    def __init__(
-        self,
-        cells_number: int,
-        sequence: str,
-        number_of_cycles: int,
-        angle: float,
-        fidelity1: float,
-        fidelity2: float,
-        fidelity3: float,
-        fidelity12: float,
-        execution_time: float,
-    ):
-        self.cells_number = cells_number
-        self.sequence = sequence
-        self.number_of_cycles = number_of_cycles
-        self.angle = angle
-        self.fidelity1 = fidelity1
-        self.fidelity2 = fidelity2
-        self.fidelity3 = fidelity3
-        self.fidelity12 = fidelity12
-        self.execution_time = execution_time
+    cells_number: int
+    sequence: str
+    number_of_cycles: int
+    angle: float
+    leak: float
+    fidelity: float
+    execution_time: float
 
 
 class Filterer:
@@ -31,12 +19,12 @@ class Filterer:
         self,
         angle: Optional[str] = None,
         module: Optional[str] = None,
-        fidelityUpperBound: Optional[str] = None,
+        leakUpperBound: Optional[str] = None,
     ):
         self.angle = float(angle) if angle is not None else None
         self.module = float(module) if module is not None else None
-        self.fidelityUpperBound = (
-            float(fidelityUpperBound) if fidelityUpperBound is not None else None
+        self.leakUpperBound = (
+            float(leakUpperBound) if leakUpperBound is not None else None
         )
 
     def run(self, array: List[ResultLog]) -> List[ResultLog]:
@@ -46,8 +34,8 @@ class Filterer:
             if self.angle is not None and abs(log.angle - self.angle) > self.module:
                 can_take = False
             if (
-                self.fidelityUpperBound is not None
-                and log.fidelity3 > self.fidelityUpperBound
+                self.leakUpperBound is not None
+                and log.leak > self.leakUpperBound
             ):
                 can_take = False
             if can_take:
@@ -64,7 +52,7 @@ def read_file(filename):
         input[index] = i.split()
     logs = []
     for i in input:
-        if len(i) != 9:
+        if len(i) != 7:
             continue
         logs.append(
             ResultLog(
@@ -72,11 +60,9 @@ def read_file(filename):
                 sequence=i[1],
                 number_of_cycles=int(i[2]),
                 angle=float(i[3]),
-                fidelity1=float(i[4]),
-                fidelity2=float(i[5]),
-                fidelity3=float(i[6]),
-                fidelity12=float(i[7]),
-                execution_time=float(i[8]),
+                leak=float(i[4]),
+                fidelity=float(i[5]),
+                execution_time=float(i[6]),
             )
         )
     return logs
@@ -88,7 +74,8 @@ class ResultLogFilename:
         args = filename.split("_")
         self.params = {}
         for i in args:
-            self.params[i.split("=")[0]] = i.split("=")[1]
+            splited = i.split('=')
+            self.params[splited[0]] = splited[1]
 
 
 def main(args):
@@ -101,15 +88,16 @@ def main(args):
         filename_params = ResultLogFilename(file)
         logs = read_file(os.path.join(args.folder, file))
         filtered = Filterer(
-            angle=args.angle, module=args.module, fidelityUpperBound=args.fidelity
+            angle=args.angle, module=args.module, leakUpperBound=args.leak
         ).run(logs)
-        filtered = sorted(filtered, key=lambda x: x.fidelity3)
+        filtered = sorted(filtered, key=lambda x: x.fidelity)
         if len(filtered) > 0:
             final_dict[filename_params.params["w01"]].append(filtered[0])
 
     for key, val in final_dict.items():
         with open(key + ".txt", "w") as f:
             for log in val:
+                log: ResultLog
                 f.write(
                     str(log.cells_number)
                     + "\t"
@@ -119,13 +107,9 @@ def main(args):
                     + "\t"
                     + str(log.angle)
                     + "\t"
-                    + str(log.fidelity1)
+                    + str(log.leak)
                     + "\t"
-                    + str(log.fidelity2)
-                    + "\t"
-                    + str(log.fidelity3)
-                    + "\t"
-                    + str(log.fidelity12)
+                    + str(log.fidelity)
                     + "\t"
                     + str(log.execution_time)
                     + "\n"
@@ -152,10 +136,10 @@ if __name__ == "__main__":
         help="The module that the filtering will be relative to. After filtering, the values will remain such that abs(x - angle) <= module. If angle is None, then skip this attribute.",
     )
     parser.add_argument(
-        "--fidelity",
-        dest="fidelity",
+        "--leak",
+        dest="leak",
         default=None,
-        help="Upper limit of fidelity. After filtering, fidelity values that are less or equal than the value will remain. If None, then filtering by this attribute is not necessary.",
+        help="Upper limit of leak. After filtering, leak values that are less or equal than the value will remain. If None, then filtering by this attribute is not necessary.",
     )
     args = parser.parse_args()
 
