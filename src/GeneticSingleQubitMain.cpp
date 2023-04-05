@@ -47,27 +47,35 @@ void Genetic(int CellsNumber = 120, int MaxCells = 120,
 
 	Kernel kernel(tstep, w01, w12, wt, w, T);
 
-	auto Amps = kernel.CreateAmpThresholds(CellsNumber);
-	auto seq = kernel.CreateStartSCALLOP(CellsNumber, Amps[Amps.size() / 2], Type);
+	/*auto Amps = kernel.CreateAmpThresholds(CellsNumber);
+	auto seq = kernel.CreateStartSCALLOP(CellsNumber, Amps[Amps.size() / 2], Type);*/
+
+	vector<vector<int>> seqs(2 * CellsNumber);
+	uniform_int_distribution<> dist(-1, 1);
+	random_device rd;
+	mt19937 gen(rd());
+	for (auto& seq : seqs) {
+		seq.resize(CellsNumber);
+		for (auto& j : seq) {
+			j = dist(gen);
+		}
+	}
+
 	CalculationDescriptor desc(w01, w12, wt, w, T, tstep, Theta, NeededAngle, NumberOfCycles, AngleUpperBound, Type);
-	GeneticAlgorithm algo(seq, CrossoverProbability, MutationProbability, MaxIter, desc);
+	GeneticAlgorithm algo(seqs, CrossoverProbability, MutationProbability, MaxIter, desc);
 	auto exec_time = algo.run();
-	auto A1Sequence = algo.getSequence();
-	auto A1F = algo.getLeak();
-	auto A1Angle = algo.getAngle();
-	auto nos = algo.getNumberOfCycles();
 
 	string filename = "L=" + to_string(CellsNumber) + "_MaxL=" + to_string(MaxCells) + "_w01=" + to_string(w01Coeff) +
 		"_w12=" + to_string(w12Coeff) + "_wt=" + to_string(wtCoeff) +
-		"_Angle=" + to_string(NeededAngle) + "_" + to_string(AngleUpperBound) + ".txt";
+		"_Angle=" + to_string(NeededAngle) + "_AngleUpperBound=" + to_string(AngleUpperBound) + ".txt";
 	ofstream fout;
 	fout.open(filename, std::ios::app);
 
 	fout << CellsNumber << '\t';
-	kernel.WriteSequence(fout, A1Sequence, '\t');
-	fout << nos << '\t';
-	fout << fixed << setprecision(20) << A1Angle << '\t';
-	fout << A1F.leak << ' ' << 1 - A1F.fidelity << '\t';
+	kernel.WriteSequence(fout, algo.getSequence(), '\t');
+	fout << algo.getNumberOfCycles() << '\t';
+	fout << fixed << setprecision(20) << NeededAngle << '\t';
+	fout << algo.getFidelity()  << ' ' << algo.getLeak() << '\t';
 	fout << '\t' << exec_time << '\n';
 	fout.close();
 }

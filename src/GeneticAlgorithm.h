@@ -10,12 +10,12 @@ using namespace std;
 
 struct Individual {
 	vector<int> Sequence;
-	double OptimizedTheta;
 	double Fidelity;
+	double Leak;
 	int NumberOfCycles;
 	Individual() {}
-	Individual(const vector<int>& _sequence, double _theta, double _f, int _cycles) :
-		Sequence(_sequence), OptimizedTheta(_theta), Fidelity(_f), NumberOfCycles(_cycles) {}
+	Individual(const vector<int>& _sequence, double _f, double _leak, int _cycles) :
+		Sequence(_sequence), Fidelity(_f), Leak(_leak), NumberOfCycles(_cycles) {}
 };
 
 struct CalculationDescriptor {
@@ -44,8 +44,7 @@ class GeneticAlgorithm
 	CalculationDescriptor Config;
 	mt19937 RandomGenerator;
 	Kernel Kernel;
-	Kernel::FidelityResult BestLeak;
-	double BestAngle;
+	double BestFidelity, BestLeak;
 	int BestNumberOfCycles;
 	vector<int> BestSequence;
 
@@ -66,8 +65,8 @@ public:
 					 double _mutation_probability, int _maxIter, CalculationDescriptor _config);
 	double run();
 	void reset();
-	Kernel::FidelityResult getLeak();
-	double getAngle();
+	double getLeak();
+	double getFidelity();
 	vector<int> getSequence();
 	int getNumberOfCycles();
 };

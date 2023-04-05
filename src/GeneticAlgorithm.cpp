@@ -62,25 +62,25 @@ double GeneticAlgorithm::run() {
 	sort(Population.begin(), Population.end(), [&](const Individual& l, const Individual& r) {
 		return _compare(l, r);
 	});
-	BestLeak = _fidelity(Population[0].Sequence, Population[0].OptimizedTheta);
-	BestAngle = Population[0].OptimizedTheta;
+	BestLeak = Population[0].Leak;
+	BestFidelity = Population[0].Fidelity;
 	BestSequence = Population[0].Sequence;
 	BestNumberOfCycles = Population[0].NumberOfCycles;
 	return omp_get_wtime() - start;
 }
 
 void GeneticAlgorithm::reset() {
-	BestLeak = { numeric_limits<double>::max(), numeric_limits<double>::max() };
-	BestAngle = -1;
+	BestLeak = numeric_limits<double>::max();
+	BestFidelity = numeric_limits<double>::max();
 	BestSequence.clear();
 }
 
-Kernel::FidelityResult GeneticAlgorithm::getLeak() {
+double GeneticAlgorithm::getLeak() {
 	return BestLeak;
 }
 
-double GeneticAlgorithm::getAngle() {
-	return BestAngle;
+double GeneticAlgorithm::getFidelity() {
+	return BestFidelity;
 }
 
 vector<int> GeneticAlgorithm::getSequence() {
@@ -105,7 +105,8 @@ Individual GeneticAlgorithm::_createIndividual(const vector<int>& sequence) {
 	vector<int> cur_seq;
 	cur_seq.reserve(sequence.size() * Config.NumberOfCycles);
 	
-	pair<double, double> Q = {INT_MAX, INT_MAX};
+	double Q = numeric_limits<double>::max();
+	double leak = -1;
 	int NumberOfCycles = -1;
 	double Theta = INT_MAX;
 	
@@ -114,16 +115,16 @@ Individual GeneticAlgorithm::_createIndividual(const vector<int>& sequence) {
 			cur_seq.push_back(sequence[j]);
 		}
 		
-		double OptimizedTheta = _optimizedTheta(cur_seq);
-		auto res = _fidelity(cur_seq, OptimizedTheta);
-		pair<double, double> cur_Q = { fabs(OptimizedTheta - Config.NeededAngle), 1 - res.fidelity};
+		auto res = _fidelity(cur_seq, Config.Theta);
+		double cur_Q = 1 - res.fidelity;
 		if (cur_Q < Q) {
 			Q = cur_Q;
-			Theta = OptimizedTheta;
+			leak = res.leak;
+			Theta = Config.Theta;
 			NumberOfCycles = len;
 		}
 	}
-	return Individual(sequence, Theta, Q.second, NumberOfCycles);
+	return Individual(sequence, Q, leak, NumberOfCycles);
 }
 
 double GeneticAlgorithm::_optimizedTheta(const vector<int>& Sequence) {
@@ -181,10 +182,5 @@ void GeneticAlgorithm::_mutation(vector<int>& a, double p) {
 }
 
 bool GeneticAlgorithm::_compare(const Individual& a, const Individual& b) {
-	double left_abs = fabs(a.OptimizedTheta - Config.NeededAngle);
-	double right_abs = fabs(b.OptimizedTheta - Config.NeededAngle);
-	if (fabs(left_abs - right_abs) < Config.AngleUpperBound) {
-		return a.Fidelity < b.Fidelity;
-	}
-	return left_abs < right_abs;
+	return a.Fidelity < b.Fidelity;
 }
