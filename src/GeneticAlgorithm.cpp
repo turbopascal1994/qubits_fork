@@ -105,22 +105,20 @@ Individual GeneticAlgorithm::_createIndividual(const vector<int>& sequence) {
 	vector<int> cur_seq;
 	cur_seq.reserve(sequence.size() * Config.NumberOfCycles);
 	
-	double Q = numeric_limits<double>::max();
+	double Q = numeric_limits<double>::min();
 	double leak = -1;
 	int NumberOfCycles = -1;
-	double Theta = INT_MAX;
 	
 	for (int len = 1; len <= Config.NumberOfCycles; ++len) {
 		for (size_t j = 0; j < sequence.size(); ++j) {
 			cur_seq.push_back(sequence[j]);
 		}
 		
-		auto res = _fidelity(cur_seq, Config.Theta);
-		double cur_Q = 1 - res.fidelity;
-		if (cur_Q < Q) {
+		auto res = _fidelity(cur_seq, Config.NeededAngle);
+		double cur_Q = res.fidelity;
+		if (cur_Q > Q) {
 			Q = cur_Q;
 			leak = res.leak;
-			Theta = Config.Theta;
 			NumberOfCycles = len;
 		}
 	}
@@ -182,5 +180,5 @@ void GeneticAlgorithm::_mutation(vector<int>& a, double p) {
 }
 
 bool GeneticAlgorithm::_compare(const Individual& a, const Individual& b) {
-	return a.Fidelity < b.Fidelity;
+	return a.Fidelity > b.Fidelity;
 }
