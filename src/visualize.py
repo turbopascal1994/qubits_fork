@@ -1,13 +1,9 @@
-from argparse import ArgumentParser
-from dataclasses import dataclass
-from typing import List, Optional
-import os
-import qutip
-from matplotlib import pyplot, animation
-from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
-from tqdm import tqdm
 import cmath
+from argparse import ArgumentParser
+
+import qutip
+from tqdm import tqdm
+
 
 def transform_to_coordinates(wf0: complex, wf1: complex):
     polar0, polar1 = cmath.polar(wf0), cmath.polar(wf1)
@@ -24,6 +20,7 @@ def transform_to_coordinates(wf0: complex, wf1: complex):
         cmath.cos(teta),
     )
 
+
 def read_file(filename):
     with open(filename, "r") as f:
         input = f.read()
@@ -38,7 +35,7 @@ def read_file(filename):
         color.append(int(input[index][-1]))
         X, Y, Z = transform_to_coordinates(
             complex(input[index][0], input[index][1]),
-            complex(input[index][2], input[index][3])
+            complex(input[index][2], input[index][3]),
         )
         x[color[-1]].append(X)
         y[color[-1]].append(Y)
@@ -53,8 +50,10 @@ def read_file(filename):
             zz.append(z[j][i])
     return xx, yy, zz
 
+
 def get_alpha(start, end, cur_step, steps):
     return start + (end - start) / steps * cur_step
+
 
 class Buffer:
     def __init__(self, size: int):
@@ -69,36 +68,31 @@ class Buffer:
     def visualize(self, sphere: qutip.Bloch):
         for index, i in enumerate(self._buffer):
             sphere.add_points(
-                i,
-                meth='m',
-                alpha=get_alpha(0.3, 1.0, index, len(self._buffer))
+                i, meth="m", alpha=get_alpha(0.3, 1.0, index, len(self._buffer))
             )
+
 
 def main(args):
     x, y, z = read_file(args.path)
-    colors = [
-        "red",
-        "green",
-        "blue",
-        "cyan",
-        "magenta",
-        "yellow"
-    ]
+    colors = ["red", "green", "blue", "cyan", "magenta", "yellow"]
     sphere = qutip.Bloch()
     # sphere.view = [-40, 30]
     sphere.point_color = colors
     sphere.vector_color = colors
-    sphere.point_marker = ['o']
+    sphere.point_marker = ["o"]
     buffer = Buffer(size=10)
     for i in tqdm(range(0, len(x) // 6)):
         sphere.clear()
         buffer.add_points(
-            x[6*i:6*(i+1)],
-            y[6*i:6*(i+1)],
-            z[6*i:6*(i+1)],
+            x[6 * i : 6 * (i + 1)],
+            y[6 * i : 6 * (i + 1)],
+            z[6 * i : 6 * (i + 1)],
         )
         buffer.visualize(sphere)
-        sphere.save(dirc='temp')  # saving images to temp directory in current working directory
+        sphere.save(
+            dirc="temp"
+        )  # saving images to temp directory in current working directory
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
