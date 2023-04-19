@@ -33,14 +33,26 @@ void Kernel::precalcFidelityAndRotateCheck(double tstep, double w01, double w12)
 	};
 };
 
+void Kernel::printState(ofstream& out, const vector<complex<double>>& state, int IS) {
+	for (int j = 0; j < state.size(); ++j) {
+		out << state[j].real() << ' ' << state[j].imag() << ' ';
+	}
+	out << IS << '\n';
+}
+
 Kernel::IntegrationResult Kernel::integration(
 	int N,
 	const vector<int>& InputSequence, 
 	const vector<complex<double>>& UTZero,
 	const vector<complex<double>>& UTMinus,
 	const vector<complex<double>>& UTPlus,
-	vector<complex<double>>& WF
+	vector<complex<double>>& WF,
+	int IS,
+	ofstream* out_stream
 ) {
+	if (out_stream) {
+		printState(*out_stream, WF, IS);
+	}
 	for (int i = 0; i < InputSequence.size(); i++) {
 		vector<complex<double>> U = UTZero;
 		if (InputSequence[i] == -1) {
@@ -50,6 +62,9 @@ Kernel::IntegrationResult Kernel::integration(
 			U = UTPlus;
 		}
 		WF = linalg::matmul(U, WF, N, 1, N, N, 1, 1);
+		if (out_stream) {
+			printState(*out_stream, WF, IS);
+		}
 	}
 
 	complex<double> l0(0), l1(0), l2(0);
@@ -66,7 +81,7 @@ void Kernel::prepareUMatrices(double Theta, vector<complex<double>>& UTZero, vec
 	double Cc = Theta / (F0 * sqrt(2.0 * w01 / (h * C1)));
 	double Amp = Cc * V * sqrt(h * w01 / (2.0 * C1));
 
-	//	Число тактов с импульсом и без него на одном периоде тактовой частоты генератора
+	//	пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	int CycleSteps = floor(T / tstep + 0.5);
 	int CyclePlusMinusSteps = floor(CycleSteps * w / T + 0.5);
 	int CycleZeroSteps = CycleSteps - CyclePlusMinusSteps;
@@ -98,7 +113,7 @@ double Kernel::RotateCheck(const vector<int>& InputSequence, double Theta) {
 	vector<complex<double>> WF(WF1);
 	vector<complex<double>> UTZero, UTMinus, UTPlus;
 	prepareUMatrices(Theta, UTZero, UTMinus, UTPlus);
-	return integration(3, InputSequence, UTZero, UTMinus, UTPlus, WF).level0;
+	return integration(3, InputSequence, UTZero, UTMinus, UTPlus, WF, 1).level0;
 }
 vector<int> Kernel::CreateStartSCALLOP(int M, double AmpThreshold, int TYPE) {
 	double Tt = PI * 2 / wt;
@@ -144,14 +159,14 @@ vector<double> Kernel::CreateAmpThresholds(const int M) {
 	}
 	return AmpsArray;
 }
-Kernel::FidelityResult Kernel::Fidelity(const vector<int>& SignalString, double Theta) {
+Kernel::FidelityResult Kernel::Fidelity(const vector<int>& SignalString, double Theta, ofstream* out_stream) {
 	double leak = 0, fidelity = 0;
 	vector<complex<double>> UTZero, UTMinus, UTPlus;
 	prepareUMatrices(Theta, UTZero, UTMinus, UTPlus);
 	for (size_t IS = 0; IS < 6; ++IS) {
 		vector<complex<double>> WF = { InitStates[IS], InitStates[IS + 6], InitStates[IS + 12] };
 		vector<complex<double>> ideal = { IdealStates[IS], IdealStates[IS + 6], IdealStates[IS + 12] };
-		auto res = integration(3, SignalString, UTZero, UTMinus, UTPlus, WF);
+		auto res = integration(3, SignalString, UTZero, UTMinus, UTPlus, WF, IS, out_stream);
 		leak += res.level2;
 		complex<double> dot_product(0);
 		for (int i = 0; i < 3; ++i) {
@@ -161,7 +176,7 @@ Kernel::FidelityResult Kernel::Fidelity(const vector<int>& SignalString, double 
 	}
 	leak /= 6;
 	fidelity /= 6;
-	return { fidelity, leak };
+	return Kernel::FidelityResult( fidelity, leak );
 }
 double Kernel::NewThetaOptimizer(const vector<int>& InputSequence, double UnOptTheta) {
 	double CurrentStep = 0.01;
