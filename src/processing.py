@@ -19,12 +19,12 @@ class Filterer:
         self,
         angle: Optional[str] = None,
         module: Optional[str] = None,
-        leakUpperBound: Optional[str] = None,
+        fidelityUpperBound: Optional[str] = None,
     ):
         self.angle = float(angle) if angle is not None else None
         self.module = float(module) if module is not None else None
-        self.leakUpperBound = (
-            float(leakUpperBound) if leakUpperBound is not None else None
+        self.fidelityUpperBound = (
+            float(fidelityUpperBound) if fidelityUpperBound is not None else None
         )
 
     def run(self, array: List[ResultLog]) -> List[ResultLog]:
@@ -34,8 +34,8 @@ class Filterer:
             if self.angle is not None and abs(log.angle - self.angle) > self.module:
                 can_take = False
             if (
-                self.leakUpperBound is not None
-                and log.leak > self.leakUpperBound
+                self.fidelityUpperBound is not None
+                and log.fidelity > self.fidelityUpperBound
             ):
                 can_take = False
             if can_take:
@@ -60,8 +60,8 @@ def read_file(filename):
                 sequence=i[1],
                 number_of_cycles=int(i[2]),
                 angle=float(i[3]),
-                leak=float(i[4]),
-                fidelity=float(i[5]),
+                fidelity=float(i[4]),
+                leak=float(i[5]),
                 execution_time=float(i[6]),
             )
         )
@@ -88,13 +88,20 @@ def main(args):
         filename_params = ResultLogFilename(file)
         logs = read_file(os.path.join(args.folder, file))
         filtered = Filterer(
-            angle=args.angle, module=args.module, leakUpperBound=args.leak
+            angle=args.angle, module=args.module, fidelityUpperBound=args.fidelity
         ).run(logs)
-        filtered = sorted(filtered, key=lambda x: x.fidelity)
+        filtered = sorted(filtered, key=lambda x: (x.number_of_cycles, x.leak))
         if len(filtered) > 0:
-            final_dict[filename_params.params["w01"]].append(filtered[0])
+            # filename = f"w01={filename_params.params['w01']}, w12={filename_params.params['w12']}, wt={filename_params.params['wt']}, angle={filename_params.params['Angle']}"
+            filename = f"{filename_params.params['w01']}"
+            final_dict[filename].append(filtered[0])
+            for i in range(1, len(filtered)):
+                if filtered[i].number_of_cycles == filtered[i - 1].number_of_cycles:
+                    continue
+                final_dict[filename].append(filtered[i])
 
     for key, val in final_dict.items():
+        val = sorted(val, key=lambda x: x.cells_number)
         with open(key + ".txt", "w") as f:
             for log in val:
                 log: ResultLog
@@ -136,10 +143,10 @@ if __name__ == "__main__":
         help="The module that the filtering will be relative to. After filtering, the values will remain such that abs(x - angle) <= module. If angle is None, then skip this attribute.",
     )
     parser.add_argument(
-        "--leak",
-        dest="leak",
+        "--fidelity",
+        dest="fidelity",
         default=None,
-        help="Upper limit of leak. After filtering, leak values that are less or equal than the value will remain. If None, then filtering by this attribute is not necessary.",
+        help="Upper limit of fidelity. After filtering, leak values that are less or equal than the value will remain. If None, then filtering by this attribute is not necessary.",
     )
     args = parser.parse_args()
 

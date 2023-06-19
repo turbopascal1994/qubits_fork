@@ -81,7 +81,31 @@ def main(args):
     sphere.vector_color = colors
     sphere.point_marker = ["o"]
     buffer = Buffer(size=10)
+    for j in range(100):
+        i = 0
+        sphere.clear()
+        buffer.add_points(
+            x[6 * i : 6 * (i + 1)],
+            y[6 * i : 6 * (i + 1)],
+            z[6 * i : 6 * (i + 1)],
+        )
+        buffer.visualize(sphere)
+        sphere.save(
+            dirc="temp"
+        )  # saving images to temp directory in current working directory
     for i in tqdm(range(0, len(x) // 6)):
+        sphere.clear()
+        buffer.add_points(
+            x[6 * i : 6 * (i + 1)],
+            y[6 * i : 6 * (i + 1)],
+            z[6 * i : 6 * (i + 1)],
+        )
+        buffer.visualize(sphere)
+        sphere.save(
+            dirc="temp"
+        )  # saving images to temp directory in current working directory
+    for j in range(100):
+        i = len(x) // 6 - 1
         sphere.clear()
         buffer.add_points(
             x[6 * i : 6 * (i + 1)],
