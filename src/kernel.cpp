@@ -1,5 +1,4 @@
 #include "kernel.h"
-#include<algorithm>
 
 
 void Kernel::precalcFidelityAndRotateCheck(double tstep, double w01, double w12) {
@@ -13,7 +12,7 @@ void Kernel::precalcFidelityAndRotateCheck(double tstep, double w01, double w12)
 	linalg::eig(H0, EigVec, EigVecRight, EigVal, 3);
 
 	vector<int> indices = { 0, 1, 2 };
-	sort(indices.begin(), indices.end(), [&](int a, int b) {
+	std::sort(indices.begin(), indices.end(), [&](int a, int b) {
 		return EigVal[a].real() < EigVal[b].real();
 	});
 	WF1 = { EigVec[indices[0]], EigVec[indices[0] + 3], EigVec[indices[0] + 6] };
@@ -198,12 +197,7 @@ double Kernel::NewThetaOptimizer(const vector<int>& InputSequence, double UnOptT
 	}
 	return CurrentTheta;
 }
-void Kernel::WriteSequence(ostream& fout, const vector<int>& InputString, char End) {
-	for (auto& i : InputString) {
-		fout << i;
-	}
-	fout << End;
-}
+
 vector<int> Kernel::ChangingOneElement(vector<int> InputSequence, int index, int type, int TYPE) {
 	if (TYPE != 3) {
 		InputSequence[index] ^= 1;

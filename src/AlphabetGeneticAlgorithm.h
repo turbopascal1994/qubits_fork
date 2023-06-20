@@ -7,13 +7,13 @@
 #include "kernel.h"
 #include <limits.h>
 #include "GeneticAlgorithmBase.h"
-#include "ConstantsDescriptor.h"
+#include "AlphabetConstantsDescriptor.h"
 
-class GeneticAlgorithm : public GeneticAlgorithmBase<BaseIndividual> {
+class AlphabetGeneticAlgorithm : public GeneticAlgorithmBase<BaseIndividual> {
 public:
-	GeneticAlgorithm(
+	AlphabetGeneticAlgorithm(
 		const std::vector<std::vector<int>>& _sequences,
-		ConstantsDescriptor _config,
+		AlphabetConstantsDescriptor _config,
 		GeneticHyperParameters _hyperParams
 	);
 	double getLeak();
@@ -21,7 +21,7 @@ public:
 	vector<int> getSequence();
 	int getNumberOfCycles();
 private:
-	ConstantsDescriptor config;
+	AlphabetConstantsDescriptor config;
 	Kernel kernel;
 
 	BaseIndividual CreateIndividual(const std::vector<int>& sequence);

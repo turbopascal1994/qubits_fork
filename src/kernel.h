@@ -2,7 +2,9 @@
 #include<fstream>
 #include <complex>
 #include <tuple>
+#include <algorithm>
 #include <omp.h>
+#include "ConstantsDescriptor.h"
 #include "linalg.h"
 
 using namespace std;
@@ -47,12 +49,13 @@ public:
 	};
 
 	Kernel(
-		double tstep,
-		double w01,
-		double w12,
-		double wt,
-		double w,
-		double T): tstep(tstep), w01(w01), w12(w12), wt(wt), w(w), T(T) {
+		ConstantsDescriptor config
+	): tstep(config.Tstep),
+		w01(config.w01),
+		w12(config.w12),
+		wt(config.wt),
+		w(config.w),
+		T(config.T) {
 		precalcFidelityAndRotateCheck(tstep, w01, w12);
 	}
 

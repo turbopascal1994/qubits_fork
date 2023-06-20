@@ -9,7 +9,8 @@
 #include <omp.h>
 #include <map>
 #include <vector>
-#include "GeneticAlgorithm.h"
+#include "ConstantsDescriptor.h"
+#include "kernel.h"
 #include <numeric>
 
 using namespace std;
@@ -45,14 +46,15 @@ int main(int argc, char** argv) {
 	const double w = tstep;
 	int numberOfCycles = 1;
 
-	Kernel kernel(tstep, w01, w12, wt, w, T);
+	ConstantsDescriptor config(w01, w12, wt, w, T, tstep, theta, theta, numberOfCycles, 0.0001, 3);
+	Kernel kernel(config);
 	string sequence = "0110-1-1011-10-1110-1011-1-1-1111-10111-1-1011-1-1-1111-1-1-111-1-1-1111-1-1-111-1-1-1111-1-11100-1011-1-1-1111-1-11111-1-1011-1-1-111-1-1-1110-1-1-111-1-101-11-1-111-1-1-1010-1-1111";
 	vector<int> seq = convertsSequenceToVector(sequence, numberOfCycles);
 	cout << seq.size() << '\n';
 
 	ofstream out;
 	out.open("our_solve.txt");
-	auto res = kernel.Fidelity(seq, theta, &out);
+	auto res = kernel.Fidelity(seq, config.neededAngle, &out);
 	cout.precision(20);
 	cout << "w01 = " << w01Coeff << '\n';
 	cout << "Leak = " << res.leak << '\n';

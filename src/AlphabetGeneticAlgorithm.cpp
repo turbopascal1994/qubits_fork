@@ -1,8 +1,9 @@
-#include "GeneticAlgorithm.h"
+#include "AlphabetGeneticAlgorithm.h"
+#include <numeric>
 
-GeneticAlgorithm::GeneticAlgorithm(
-	const std::vector<std::vector<int>>& _sequences, 
-	ConstantsDescriptor _config, 
+AlphabetGeneticAlgorithm::AlphabetGeneticAlgorithm(
+	const std::vector<std::vector<int>>& _sequences,
+	AlphabetConstantsDescriptor _config,
 	GeneticHyperParameters _hyperParams
 ) : config(_config), kernel(_config) {
 	hyperParams = _hyperParams;
@@ -12,23 +13,23 @@ GeneticAlgorithm::GeneticAlgorithm(
 	}
 }
 
-double GeneticAlgorithm::getLeak() {
+double AlphabetGeneticAlgorithm::getLeak() {
 	return population[0].leak;
 }
 
-double GeneticAlgorithm::getFidelity() {
+double AlphabetGeneticAlgorithm::getFidelity() {
 	return population[0].fidelity;
 }
 
-vector<int> GeneticAlgorithm::getSequence() {
+vector<int> AlphabetGeneticAlgorithm::getSequence() {
 	return population[0].sequence;
 }
 
-int GeneticAlgorithm::getNumberOfCycles() {
+int AlphabetGeneticAlgorithm::getNumberOfCycles() {
 	return population[0].numberOfCycles;
 }
 
-BaseIndividual GeneticAlgorithm::CreateIndividual(const std::vector<int>& sequence) {
+BaseIndividual AlphabetGeneticAlgorithm::CreateIndividual(const std::vector<int>& sequence) {
 	vector<int> cur_seq;
 	cur_seq.reserve(sequence.size() * config.numberOfCycles);
 
@@ -52,11 +53,11 @@ BaseIndividual GeneticAlgorithm::CreateIndividual(const std::vector<int>& sequen
 	return BaseIndividual(sequence, fidelity, leak, NumberOfCycles);
 }
 
-Kernel::FidelityResult GeneticAlgorithm::_compute_fidelity(std::vector<int>& sequence, double neededAngle) {
-	return kernel.Fidelity(sequence, neededAngle);
+Kernel::FidelityResult AlphabetGeneticAlgorithm::_compute_fidelity(std::vector<int>& sequence, double neededAngle) {
+	return kernel.Fidelity(config.alp.decode(sequence), neededAngle);
 }
 
-void GeneticAlgorithm::CrossoverImpl(std::vector<int>& ls, std::vector<int>& rs) {
+void AlphabetGeneticAlgorithm::CrossoverImpl(std::vector<int>& ls, std::vector<int>& rs) {
 	assert(ls.size() == rs.size());
 	int index = GenerateInt(2, (int)rs.size() - 1);
 	for (size_t i = index; i < ls.size(); ++i) {
@@ -64,20 +65,17 @@ void GeneticAlgorithm::CrossoverImpl(std::vector<int>& ls, std::vector<int>& rs)
 	}
 }
 
-void GeneticAlgorithm::MutationImpl(std::vector<int>& sequence) {
+void AlphabetGeneticAlgorithm::MutationImpl(std::vector<int>& sequence) {
 	double p = 1.0 / sequence.size();
-	vector<int> tmp;
+	int alphabetSize = config.alp.wordbook.size();
+	vector<int> tmp(alphabetSize);
+	std::iota(tmp.begin(), tmp.end(), 0);
 	for (int i = 0; i < sequence.size(); ++i) {
 		if (GenerateProbability() < p) {
-			if (config.type == 2) tmp = { 0, 1 };
-			else tmp = { -1, 0, 1 };
-			tmp.erase(find(tmp.begin(), tmp.end(), sequence[i]));
-			if (tmp.size() == 1) {
-				sequence[i] = tmp[0];
-			}
-			else {
-				sequence[i] = tmp[GenerateProbability() * 2 < 1.0];
-			}
+			do {
+				shuffle(tmp.begin(), tmp.end(), randomGenerator);
+			} while (tmp[0] == sequence[i]);
+			sequence[i] = tmp[0];
 		}
 	}
 }
