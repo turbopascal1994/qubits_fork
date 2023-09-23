@@ -2,16 +2,16 @@
 
 std::map<std::string, double> ArgsPreprocessor::run(int argc, char** argv) {
 	std::map<std::string, double> mp = {
-		{"len", 120},
+		{"len", 30},
 		{"max_len", 120},
 		{"w01", 5},
 		{"w12", 0.25},
-		{"wt", 25},
+		{"wt", 35},
 		{"angle", 0.024},
 		{"module", 0.0001},
-		{"mp", 0.8},
-		{"cp", 0.8},
-		{"iter", 500},
+		{"mp", 0.5},
+		{"cp", 0.9},
+		{"iter", 1000},
 		{"type", 3}
 	};
 	for (int i = 1; i < argc; i += 2) {

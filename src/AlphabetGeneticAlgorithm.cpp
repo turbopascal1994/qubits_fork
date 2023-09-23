@@ -41,7 +41,7 @@ BaseIndividual AlphabetGeneticAlgorithm::CreateIndividual(const std::vector<int>
 		for (size_t j = 0; j < sequence.size(); ++j) {
 			cur_seq.push_back(sequence[j]);
 		}
-
+		if (len != config.numberOfCycles) continue;
 		Kernel::FidelityResult res = _compute_fidelity(cur_seq, config.neededAngle);
 		double cur_fidelity = res.fidelity;
 		if (cur_fidelity > fidelity || fidelity == -1) {
