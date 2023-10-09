@@ -16,16 +16,16 @@ void Genetic(
 	int MaxIter,
 	int Type
 ) {
-	cout << "CellsNumber = " << CellsNumber << endl;
-	cout << "w01Coeff = " << w01Coeff << endl;
-	cout << "w12Coeff = " << w12Coeff << endl;
-	cout << "wtCoeff = " << wtCoeff << endl;
-	cout << "NeededAngle = " << NeededAngle << endl;
-	cout << "AngleUpperBound = " << AngleUpperBound << endl;
-	cout << "CrossoverProbability = " << CrossoverProbability << endl;
-	cout << "MutationProbability = " << MutationProbability << endl;
-	cout << "MaxIter = " << MaxIter << endl;
-	cout << "Type = " << Type << endl;
+	// cout << "CellsNumber = " << CellsNumber << endl;
+	// cout << "w01Coeff = " << w01Coeff << endl;
+	// cout << "w12Coeff = " << w12Coeff << endl;
+	// cout << "wtCoeff = " << wtCoeff << endl;
+	// cout << "NeededAngle = " << NeededAngle << endl;
+	// cout << "AngleUpperBound = " << AngleUpperBound << endl;
+	// cout << "CrossoverProbability = " << CrossoverProbability << endl;
+	// cout << "MutationProbability = " << MutationProbability << endl;
+	// cout << "MaxIter = " << MaxIter << endl;
+	// cout << "Type = " << Type << endl;
 	double w01 = w01Coeff * 2 * PI * 1e9;
 	double w12 = w01 - w12Coeff * 2 * PI * 1e9;
 	double wt = wtCoeff * 2 * PI * 1e9;
@@ -41,11 +41,20 @@ void Genetic(
 	mt19937 gen(rd());
 
 	string filename = "L=" + to_string(CellsNumber) + "_w01=" + to_string(w01Coeff) +
-		"_w12=" + to_string(w12Coeff) + "_wt=" + to_string(wtCoeff) +
-		"_Angle=" + to_string(NeededAngle) + ".txt";
+		"_w12=" + to_string(w12Coeff) + "_wt=" + to_string(wtCoeff) + ".txt";
 	ofstream fout;
 	fout.open(filename, std::ios::app);
+	fout.setprecision(10);
 
+	fout << "ALPHABET START\n";
+	fout << alphabet.wordbook.size() << '\n';
+	for (auto & i : alphabet.wordbook) {
+		for(int j = 0;j < 3;j++){
+			fout << i[j] << ' ';
+		}
+		fout << '\n';
+	}
+	fout << "ALPHABET END\n";
 
 	for (int NumberOfCycles = 1; NumberOfCycles <= 10; NumberOfCycles++) {
 
@@ -62,16 +71,15 @@ void Genetic(
 		AlphabetGeneticAlgorithm algo(seqs, config, hyperParams);
 		auto exec_time = algo.run();
 
-
 		auto sequence = algo.getSequence();
+		fout << sequence.size() << '\t';
+		for (auto& i : sequence) fout << i << ' ';
+		fout << '\t';
 		auto decoded_sequence = alphabet.decode(sequence);
 		fout << decoded_sequence.size() << '\t';
-		for (auto& i : decoded_sequence) {
-			fout << i;
-		}
+		for (auto& i : decoded_sequence) fout << i;
 		fout << '\t';
 		fout << algo.getNumberOfCycles() << '\t';
-		fout << fixed << setprecision(20) << NeededAngle << '\t';
 		fout << 1 - algo.getFidelity() << ' ' << algo.getLeak() << '\t';
 		fout << '\t' << exec_time << '\n';
 	}

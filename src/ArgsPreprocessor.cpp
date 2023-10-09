@@ -2,7 +2,7 @@
 
 std::map<std::string, double> ArgsPreprocessor::run(int argc, char** argv) {
 	std::map<std::string, double> mp = {
-		{"len", 30},
+		{"len", 10},
 		{"max_len", 120},
 		{"w01", 5},
 		{"w12", 0.25},

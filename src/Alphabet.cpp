@@ -8,12 +8,12 @@ void generateBipolarAlphabet(unsigned int alphabetSize, std::vector<std::array<u
 }
 
 void generateUnipolarAlphabet(unsigned int alphabetSize, std::vector<std::array<unsigned int, 3>>& wordbook, std::array<int, 3>& order) {
-	order = { 1, 0, -1 };
+	order = { 0, 1, -1 };
 	for (unsigned int i = 0; i < 100; ++i) {
 		for (unsigned int j = 0; j < 100; ++j) {
-			for (unsigned int k = 0; k < 4; ++k) {
-				if (i + j + k >= 3 && i + j + k <= 7 && i + j > 0) {
-					wordbook.push_back({ i, j, k });
+			for (unsigned int k = 2; k <= 4; ++k) {
+				if (i + j + k <= 10) {
+					wordbook.push_back({ i, k, j });
 				}
 			}
 		}
