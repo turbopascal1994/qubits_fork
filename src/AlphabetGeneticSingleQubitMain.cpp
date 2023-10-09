@@ -34,7 +34,7 @@ void Genetic(
 	const double tstep = 5e-14;
 	const double w = tstep;
 
-	int populationSize = 2 * CellsNumber;
+	int populationSize = 4 * CellsNumber;
 	int alphabetSize = 100;
 	Alphabet alphabet(alphabetSize, Type);
 	random_device rd;
