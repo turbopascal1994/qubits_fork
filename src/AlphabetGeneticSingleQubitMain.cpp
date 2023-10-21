@@ -44,7 +44,6 @@ void Genetic(
 		"_w12=" + to_string(w12Coeff) + "_wt=" + to_string(wtCoeff) + ".txt";
 	ofstream fout;
 	fout.open(filename, std::ios::app);
-	fout.setprecision(10);
 
 	fout << "ALPHABET START\n";
 	fout << alphabet.wordbook.size() << '\n';
@@ -80,6 +79,7 @@ void Genetic(
 		for (auto& i : decoded_sequence) fout << i;
 		fout << '\t';
 		fout << algo.getNumberOfCycles() << '\t';
+		fout << algo.getBestIteration() << '\t';
 		fout << 1 - algo.getFidelity() << ' ' << algo.getLeak() << '\t';
 		fout << '\t' << exec_time << '\n';
 	}

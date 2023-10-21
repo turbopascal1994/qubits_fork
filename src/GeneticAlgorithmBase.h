@@ -25,6 +25,7 @@ class GeneticAlgorithmBase {
 protected:
 	std::vector<INDIVID> population;
 	unsigned int populationSize;
+	unsigned int bestIteration;
 	virtual INDIVID CreateIndividual(const std::vector<int>& sequence) = 0;
 	GeneticHyperParameters hyperParams;
 
@@ -71,12 +72,15 @@ protected:
 	virtual void MutationImpl(std::vector<int>& sequence) = 0;
 	// END OF MUTATION BLOCK
 
+	virtual bool CheckStopCondition() = 0;
+
 public:
 	GeneticAlgorithmBase() : randomGenerator(chrono::high_resolution_clock::now().time_since_epoch().count()) {}
 	double run() {
 		double start = omp_get_wtime();
 		int offSpringSize = populationSize / 2;
 		std::vector<INDIVID> newPopulation(populationSize);
+		bestIteration = hyperParams.maxIter;
 
 		for (int iteration = 0; iteration < hyperParams.maxIter; ++iteration) {
 #pragma omp parallel for shared(newPopulation)
@@ -97,8 +101,16 @@ public:
 			newPopulation[populationSize - 2] = population[0];
 			newPopulation[populationSize - 1] = population[1];
 			swap(population, newPopulation);
+			if (CheckStopCondition()) {
+				bestIteration = iteration;
+				break;
+			}
 		}
 		sort(population.begin(), population.end());
 		return omp_get_wtime() - start;
+	}
+
+	int getBestIteration() {
+		return bestIteration;
 	}
 };

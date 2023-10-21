@@ -28,4 +28,6 @@ private:
 	Kernel::FidelityResult _compute_fidelity(std::vector<int>& sequence, double neededAngle);
 	void CrossoverImpl(std::vector<int>& ls, std::vector<int>& rs);
 	void MutationImpl(std::vector<int>& sequence);
+	bool CheckStopCondition();
+	vector<int> buildSequence(const vector<int>& initial, int prefix_count);
 };

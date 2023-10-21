@@ -18,7 +18,7 @@ void generateUnipolarAlphabet(unsigned int alphabetSize, std::vector<std::array<
 			}
 		}
 	}
-	std::sort(wordbook.begin(), wordbook.end(), [](std::array<unsigned int, 3> &lb, std::array<unsigned int, 3> & rb) {
+	std::sort(wordbook.begin(), wordbook.end(), [](const std::array<unsigned int, 3> &lb, const std::array<unsigned int, 3> & rb) {
 		int lb_sum = lb[0] + lb[1] + lb[2];
 		int rb_sum = rb[0] + rb[1] + rb[2];
 		if (lb_sum == rb_sum) {

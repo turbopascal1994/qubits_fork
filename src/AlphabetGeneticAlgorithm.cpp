@@ -50,7 +50,7 @@ BaseIndividual AlphabetGeneticAlgorithm::CreateIndividual(const std::vector<int>
 			NumberOfCycles = len;
 		}
 	}
-	return BaseIndividual(sequence, fidelity, leak, NumberOfCycles);
+	return BaseIndividual(sequence, fidelity, leak, NumberOfCycles, 0);
 }
 
 Kernel::FidelityResult AlphabetGeneticAlgorithm::_compute_fidelity(std::vector<int>& sequence, double neededAngle) {
@@ -78,4 +78,8 @@ void AlphabetGeneticAlgorithm::MutationImpl(std::vector<int>& sequence) {
 			sequence[i] = tmp[0];
 		}
 	}
+}
+
+bool AlphabetGeneticAlgorithm::CheckStopCondition(){
+	return 1 - population[0].fidelity < 0.0001;
 }

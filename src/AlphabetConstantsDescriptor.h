@@ -11,6 +11,6 @@ public:
 		double _T, double _Tstep, double _Theta,
 		double _neededAngle, int _numberOfCycles,
 		double _angleUpperBound, int _type
-	) : ConstantsDescriptor(_w01, _w12, _wt, _w, _T, _Tstep, _Theta, _neededAngle, _numberOfCycles, _angleUpperBound, _type),
+	) : ConstantsDescriptor(_w01, _w12, _wt, _w, _T, _Tstep, _Theta, _neededAngle, _numberOfCycles, _angleUpperBound, _type, 0),
 		alp(_alp) {}
 };

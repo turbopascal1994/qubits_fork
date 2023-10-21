@@ -3,7 +3,10 @@
 
 using namespace std;
 
-void Genetic(int CellsNumber = 120, int MaxCells = 120,
+void Genetic(
+	int RegularLen = 30,
+	int CellsNumber = 120, 
+	int MaxCells = 120,
 	double w01Coeff = 3,
 	double w12Coeff = 0.25,
 	double wtCoeff = 25,
@@ -32,9 +35,9 @@ void Genetic(int CellsNumber = 120, int MaxCells = 120,
 	const double Theta = 0.001;
 	const double tstep = 5e-14;
 
-	const int NumberOfCycles = (MaxCells + CellsNumber - 1) / CellsNumber;
+	const int NumberOfCycles = 1;
 
-	ConstantsDescriptor config(w01, w12, wt, w, T, tstep, Theta, NeededAngle, NumberOfCycles, AngleUpperBound, Type);
+	ConstantsDescriptor config(w01, w12, wt, w, T, tstep, Theta, NeededAngle, NumberOfCycles, AngleUpperBound, Type, RegularLen);
 
 	vector<vector<int>> seqs(2 * CellsNumber);
 	uniform_int_distribution<> dist(-1, 1);
@@ -50,20 +53,18 @@ void Genetic(int CellsNumber = 120, int MaxCells = 120,
 	GeneticAlgorithm algo(seqs, config, hyperParams);
 	auto exec_time = algo.run();
 
-	string filename = "L=" + to_string(CellsNumber) + "_MaxL=" + to_string(MaxCells) + "_w01=" + to_string(w01Coeff) +
+	string filename = "RL=" + to_string(RegularLen) + "_L=" + to_string(CellsNumber) + "_w01=" + to_string(w01Coeff) +
 		"_w12=" + to_string(w12Coeff) + "_wt=" + to_string(wtCoeff) +
-		"_Angle=" + to_string(NeededAngle) + "_AngleUpperBound=" + to_string(AngleUpperBound) + ".txt";
+		"_Angle=" + to_string(NeededAngle) + ".txt";
 	ofstream fout;
 	fout.open(filename, std::ios::app);
 
 	fout << CellsNumber << '\t';
-	for (auto& i : algo.getSequence()) {
-		fout << i;
-	}
+	for (auto& i : algo.getSequence()) fout << i;
 	fout << '\t';
 	fout << algo.getNumberOfCycles() << '\t';
-	fout << fixed << setprecision(20) << NeededAngle << '\t';
-	fout << algo.getFidelity()  << ' ' << algo.getLeak() << '\t';
+	fout << algo.getBestIteration() << '\t';
+	fout << 1 - algo.getFidelity()  << ' ' << algo.getLeak() << '\t';
 	fout << '\t' << exec_time << '\n';
 	fout.close();
 }
@@ -72,6 +73,7 @@ int main(int argc, char** argv) {
 	omp_set_num_threads(4);
 	auto mp = ArgsPreprocessor::run(argc, argv);
 	Genetic(
+		int(mp["regular_len"]),
 		int(mp["len"]),
 		int(mp["max_len"]),
 		mp["w01"],
