@@ -8,9 +8,9 @@ class ResultLog:
     cells_number: int
     sequence: str
     number_of_cycles: int
-    angle: float
-    leak: float
+    iterations: int
     fidelity: float
+    leak: float
     execution_time: float
 
 
@@ -31,8 +31,8 @@ class Filterer:
         ans = []
         for log in array:
             can_take = True
-            if self.angle is not None and abs(log.angle - self.angle) > self.module:
-                can_take = False
+            # if self.angle is not None and abs(log.angle - self.angle) > self.module:
+            #     can_take = False
             if (
                 self.fidelityUpperBound is not None
                 and log.fidelity > self.fidelityUpperBound
@@ -59,7 +59,7 @@ def read_file(filename):
                 cells_number=int(i[0]),
                 sequence=i[1],
                 number_of_cycles=int(i[2]),
-                angle=float(i[3]),
+                iterations=int(i[3]),
                 fidelity=float(i[4]),
                 leak=float(i[5]),
                 execution_time=float(i[6]),
@@ -90,14 +90,14 @@ def main(args):
         filtered = Filterer(
             angle=args.angle, module=args.module, fidelityUpperBound=args.fidelity
         ).run(logs)
-        filtered = sorted(filtered, key=lambda x: (x.number_of_cycles, x.leak))
+        filtered = sorted(filtered, key=lambda x: x.fidelity)
         if len(filtered) > 0:
-            # filename = f"w01={filename_params.params['w01']}, w12={filename_params.params['w12']}, wt={filename_params.params['wt']}, angle={filename_params.params['Angle']}"
-            filename = f"{filename_params.params['w01']}"
+            filename = f"N={int(filename_params.params['RL'])}, M={int(filename_params.params['L'])}, w01={filename_params.params['w01']}, w12={filename_params.params['w12']}, wt={filename_params.params['wt']}, angle={filename_params.params['Angle']}"
+            # filename = f"{filename_params.params['w01']}"
             final_dict[filename].append(filtered[0])
             for i in range(1, len(filtered)):
-                if filtered[i].number_of_cycles == filtered[i - 1].number_of_cycles:
-                    continue
+                # if filtered[i].number_of_cycles == filtered[i - 1].number_of_cycles:
+                #     continue
                 final_dict[filename].append(filtered[i])
 
     for key, val in final_dict.items():
@@ -112,11 +112,11 @@ def main(args):
                     + "\t"
                     + str(log.number_of_cycles)
                     + "\t"
-                    + str(log.angle)
-                    + "\t"
-                    + str(log.leak)
+                    + str(log.iterations)
                     + "\t"
                     + str(log.fidelity)
+                    + "\t"
+                    + str(log.leak)
                     + "\t"
                     + str(log.execution_time)
                     + "\n"
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fidelity",
         dest="fidelity",
-        default=None,
+        default=0.0001,
         help="Upper limit of fidelity. After filtering, leak values that are less or equal than the value will remain. If None, then filtering by this attribute is not necessary.",
     )
     args = parser.parse_args()
