@@ -9,6 +9,7 @@
 #include <omp.h>
 #include "linalg.h"
 #include <map>
+#include <chrono>
 // #include "TwoCubitsKernel.h"
 
 using namespace std;
@@ -448,8 +449,8 @@ int main() {
 	TYPE Cc2 = 4e-16;
 
 	// pulse generation frequencies
-	TYPE wg1 = 25 * (2 * PI) * 1e9;
-	TYPE wg2 = 25 * (2 * PI) * 1e9;
+	TYPE wg1 = w2;
+	TYPE wg2 = w2;
 	TYPE tau = 4 * 1e-12; // Длительность импульса
 	TYPE phi = 0; // phase (number of grid steps paused on Q2)
 
@@ -457,20 +458,27 @@ int main() {
 	int waitq1 = 0;
 	int waitq2 = 0;
 
-	string str1 = "11-1-1-1110-1011-1-1-111-1-1-111-1-1110-1-1110-1-1110-1-111-10-1111-1-1110-1-1111-1-1111-1-1111-1-1011-10111-1-1011-1-1-111-1-1-111-10110-1-111-1-1-101-1-1-111-1-1-1110-1-11";
+	int M = 1000;
+	string str1 = "";
+	for (int i = 0; i < M; i++) {
+		str1 = str1.append("1");
+	}
 	string str2;
 
 	string init = "00"; // initial condition
 	string operation = "h0"; // required operation (for fidelity calculation)
-
+	auto start = high_resolution_clock::now();
 	auto res = SimulateIrregular(
 		N, w1, w2, mu1, mu2, g, Cq1, Cq2, Cc1, Cc2,
 		wg1, wg2, tau, phi, waitq1, waitq2,
 		str1, str2, tstep, init, operation
 	);
+	auto stop = high_resolution_clock::now();
 	for (auto& i : res) {
 		cout << fixed << setprecision(20) << i.first << ' ' << i.second << '\n';
 	}
+	auto duration = duration_cast<milliseconds>(stop - start);
+	cout << float(duration.count())/1000 <<" seconds" << endl;
 	return 0;
 }
 
